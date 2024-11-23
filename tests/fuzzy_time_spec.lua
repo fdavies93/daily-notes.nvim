@@ -5,23 +5,25 @@ describe('Fuzzy Time', function()
 	it('Should return the correct date for today', function()
 		assert.equals(
 			fuzzy_time.get_date("today"),
-			vim.fn.strftime("%Y-%m-%d")
+			os.time()
 		)
 	end)
 	it('Should return the correct date for tomorrow', function()
 		assert.equals(
 			fuzzy_time.get_date("tomorrow"),
-			vim.fn.strftime(
-				"%Y-%m-%d", os.time() + (24 * 60 * 60)
-			)
+			os.time() + (24 * 60 * 60)
 		)
 	end)
 	it('Should return the correct date for yesterday', function()
 		assert.equals(
 			fuzzy_time.get_date("yesterday"),
-			vim.fn.strftime(
-				"%Y-%m-%d", os.time() - (24 * 60 * 60)
-			)
+			os.time() - (24 * 60 * 60)
+		)
+	end)
+	it('Should return the correct date from timestamp', function()
+		assert.equals(
+			fuzzy_time.get_date("2024-10-01"),
+			vim.fn.strptime("%Y-%m-%d", "2024-10-01")
 		)
 	end)
 end)

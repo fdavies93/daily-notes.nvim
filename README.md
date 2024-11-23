@@ -17,5 +17,5 @@ should try to do one thing and do it well.
 
 ### fuzzy-time.lua
 
-This resolves strings in plain English into timestamps. It's used to implement
-date parsing for creating new notes.
+This resolves strings in plain English into UNIX timestamps. It's used to
+implement date parsing for creating new notes.
