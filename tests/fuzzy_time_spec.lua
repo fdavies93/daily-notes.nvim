@@ -26,4 +26,10 @@ describe('Fuzzy Time', function()
 			vim.fn.strptime("%Y-%m-%d", "2024-10-01")
 		)
 	end)
+	it('Should return nil from incorrect timestamp', function()
+		assert.equals(
+			fuzzy_time.get_date("2024/10/01"),
+			nil
+		)
+	end)
 end)
