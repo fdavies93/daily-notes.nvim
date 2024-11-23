@@ -1,4 +1,3 @@
-require("daily-notes").setup()
 local fuzzy_time = require("daily-notes.fuzzy-time")
 local opts = {
 	timestamp_formats = {
@@ -109,6 +108,20 @@ describe('Fuzzy Time:', function()
 			vim.fn.strftime("%Y-%m-%d", time)
 		)
 	end)
+
+	it('Should return correct date for a one-day weekday', function()
+		local this_sunday = fuzzy_time.get_date("sunday", opts)
+		local time = os.time()
+		while vim.fn.strftime("%A", time) ~= "Sunday" do
+			time = time + (24 * 60 * 60)
+		end
+		assert.same(
+			vim.fn.strftime("%Y-%m-%d", this_sunday[1]),
+			vim.fn.strftime("%Y-%m-%d", time)
+		)
+	end)
+
+
 
 	it('Should return correct date for an offset weekday', function()
 		local next_sunday = fuzzy_time.get_date("next sunday", opts)

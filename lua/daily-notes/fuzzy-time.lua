@@ -12,11 +12,6 @@ local weekdays = {
 	"sunday"
 }
 
-local periods = {
-	"day",
-	"week"
-}
-
 local relative_days = {
 	today = function()
 		return { time_plus_days(0), "day" }
@@ -69,15 +64,6 @@ local get_this_weekday = function(weekday, week_starts)
 	return get_this_week(week_starts)[weekday]
 end
 
-local get_single_token_date = function(token, opts)
-	local fn
-	if relative_days[token] ~= nil then
-		fn = relative_days[token]
-		return fn()
-	end
-	return nil
-end
-
 local get_relative2 = function(tokens, opts)
 	-- periodic dates
 	local offset
@@ -104,6 +90,23 @@ local get_relative2 = function(tokens, opts)
 	this_weekday = this_weekday + (offset * 7 * 24 * 60 * 60)
 	return { this_weekday, "day" }
 end
+
+local get_single_token_date = function(token, opts)
+	local fn
+	if relative_days[token] ~= nil then
+		fn = relative_days[token]
+		return fn()
+	end
+	for i = 1, #weekdays do
+		if weekdays[i] == token then
+			-- could be a configuration option, but probably
+			-- not that useful
+			return get_relative2({ "this", token }, opts)
+		end
+	end
+	return nil
+end
+
 
 local get_two_token_date = function(tokens, opts)
 	if tokens[1] == "next" or tokens[1] == "last" or tokens[1] == "this" then
