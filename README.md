@@ -4,7 +4,8 @@
 
 > [!warning]
 >
-> This plugin isn't ready yet. Don't try to install it with lazy etc.
+> This plugin isn't ready yet. Don't expect it to work if you install it!
+> However, pull requests are welcome.
 
 An nvim plugin to enable creating daily and weekly notes. Inspired by the
 Obsidian feature of the same name and
@@ -12,6 +13,17 @@ Obsidian feature of the same name and
 
 It _only_ supports this feature, in line with the UNIX philosophy that programs
 should try to do one thing and do it well.
+
+## Installation
+
+### Lazy.nvim
+
+```lua
+-- install from local repo
+{ dir = "~/daily-notes.nvim", opts = {} }
+-- install from github repo
+{ "fdavies93/daily-notes.nvim", opts = {} }
+```
 
 ## Modules
 
