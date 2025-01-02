@@ -1,3 +1,5 @@
+local M = {}
+
 local default = {
 	-- recommended to change this
 	root = "~/daily-notes",
@@ -39,3 +41,9 @@ local default = {
 		}
 	}
 }
+
+M.get = function()
+	return default
+end
+
+return M
