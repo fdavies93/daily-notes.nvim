@@ -29,26 +29,40 @@ days` are allowable.
 ```
 date := timestamp | relative_period
 
--- relative periods need parsing
+-- relative periods need parsing in some way
+-- relative_fixed_periods can always be resolved without reference to
+-- ambiguous time periods
+-- relative_named_periods need to use additional logic to resolve what
+-- is meant by "this" e.g. "this January".
+-- eventually these strategies should be configurable by the user.
+relative_period := relative_fixed_period | relative_named_period
 
-relative_period :=
-"today" |
-"yesterday" |
-"tomorrow" |
-named_period | -- equivalent to "this" ~ named_period
-( number ~ period ~ "ago" ) |
-( "in" ~ number ~ period ) |
-( relative_modifier ~ period ) |
-( number ~ named_period ~ "ago" ) |
+-- note that "this week" isn't ambiguous if you know when a week starts, but it
+-- does need resolving in a consistent way
+
+relative_fixed_period :=
+"today" | -- date
+"yesterday" | -- date - day(1)
+"tomorrow" | -- date + day(1)
+period | -- equivalent to "this" ~ period, i.e. period
+( number ~ period ~ "ago" ) | -- date - period(number)
+( "in" ~ number ~ period ) | -- date + period(number)
+period ~ [+-] ~ number | -- journal.nvim syntax -- date [+-] period(number)
+( relative_modifier ~ period ) | -- date [+-] period([01])
+
+relative_named_period :=
+named_period | -- equivalent to "this" ~ named_period -- resolve(named_period)
+( relative_modifier ~ named_period ) | -- resolve(named_period) [+-] period([01])
+( number ~ named_period ~ "ago" ) | -- resolve(named_period) - period(number)
 ( "in" ~ number ~ named_period ) |
-( relative_modifier ~ named_period ) |
-period ~ [+-] ~ number | -- journal.nvim syntax
 named_period ~ [+-] ~ number ~ period
 relative_modifier ~ named_period ~ [+-] ~ number ~ period
 
+
+
 -- named periods contain the most ambiguity and difficult parsing
 named_period := weekday | month
-relative_modifier := "this" | "next" | "last"
+relative_modifier := "this" | "next" | "last" | "prev" | "previous"
 period := "days?" | "weeks?" | "months?" | "years?"
 weekday := "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"
 month := "january" | "february" | "march" | "april" | "may" | "june" | "july" | "august" | "september" | "october" | "november" | "december"

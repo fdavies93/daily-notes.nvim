@@ -13,7 +13,7 @@ M.fuzzy_time = function(opts)
 	end
 	local timestamp = date[1]
 	local time_string = vim.fn.strftime("%Y-%m-%d %H:%M:%S", timestamp)
-	print(time_string)
+	print(time_string .. " - " .. date[2])
 end
 
 return M
