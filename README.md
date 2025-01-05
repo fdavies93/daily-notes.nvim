@@ -4,8 +4,12 @@
 
 > [!warning]
 >
-> This plugin isn't ready yet. Don't expect it to work if you install it!
-> However, pull requests are welcome.
+> This plugin isn't ready yet, but it works. At the moment it supports basic
+> timestamps and templating; this is so I can begin
+> [dogfooding](https://en.wikipedia.org/wiki/Eating_your_own_dog_food) it.
+>
+> If you want to try it out, clone the repo and use the lazy.nvim instruction
+> below to run locally.
 
 An nvim plugin to enable creating daily and weekly notes. Inspired by the
 Obsidian feature of the same name and
