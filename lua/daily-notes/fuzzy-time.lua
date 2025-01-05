@@ -5,12 +5,13 @@ M.get_timestamp = function(date_string, timestamp_formats, order)
 		local period = order[i]
 		for format_i = 1, #timestamp_formats[period] do
 			local format = timestamp_formats[period][format_i]
+			-- Might be worth replacing strptime with a less temperamental
+			-- alternative later.
 			local timestamp = vim.fn.strptime(format, date_string)
 			if timestamp ~= 0 then
 				local date_table = os.date("*t", timestamp)
 				if (period == "month" or period == "year") and date_table.day ~= 1 then
-					-- correct strange off-by-one error from
-					-- strptime
+					-- correct strange off-by-one error from strptime
 					timestamp = timestamp + (24 * 60 * 60)
 					date_table = os.date("*t", timestamp)
 				end

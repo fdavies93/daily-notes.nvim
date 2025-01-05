@@ -27,7 +27,13 @@ This grammar aims to be generous rather than accurate: so '2 day ago' and 'this
 days` are allowable.
 
 ```
-date := timestamp | relative_period
+date := timestamp | special_timestamp | relative_period
+
+-- timestamps are handled by simple strptime logic
+
+-- special timestamps pattern-match and apply some custom logic to calculate
+-- timestamps beyond what default strptime is capable of (mainly used for weeks
+   of the year)
 
 -- relative periods need parsing in some way
 -- relative_fixed_periods can always be resolved without reference to
@@ -39,7 +45,6 @@ relative_period := relative_fixed_period | relative_named_period
 
 -- note that "this week" isn't ambiguous if you know when a week starts, but it
 -- does need resolving in a consistent way
-
 relative_fixed_period :=
 "today" | -- date
 "yesterday" | -- date - day(1)

@@ -3,7 +3,7 @@ local M = {}
 local default = {
 	parsing = {
 		-- Needed to iterate correctly through formats
-		timestamp_order = { "day", "week", "month", "year" },
+		timestamp_order = { "day", "month", "year" },
 		timestamp_formats = {
 			-- ISO date format is preferred (it's unambiguous)
 			-- 4-digit years are preferred over 2-digit years for
@@ -19,12 +19,8 @@ local default = {
 				"%A, %B %d %Y",
 				"%a, %B %d %Y",
 			},
-			-- In rare cases, weeks might need offsetting based on
-			-- the first day of the week.
-			week = {
-				"%Y Week %W",
-				"Week %W, %Y"
-			},
+			-- Weeks do not appear to be supported (on Arch Linux)
+			-- therefore custom parsing is implemented for them.
 			month = {
 				"%Y-%m",
 				"%Y/%m",
@@ -37,7 +33,7 @@ local default = {
 				"%Y"
 			}
 		},
-		week_starts = "monday",
+		week_starts = 2, -- i.e Monday
 	},
 	writing = {
 		-- recommended to change this
@@ -46,13 +42,18 @@ local default = {
 		day = {
 			directory = "daily",
 			filename = "%Y-%m-%d",
-			template = "%A, %B %d %Y\n\n"
+			template = "# %A, %B %d %Y\n\n"
 		},
 		week = {
 			directory = "weekly",
 			filename = "%Y-week-%W",
-			template = "Week %W, %Y\n\n"
-		}
+			template = "# Week %W, %Y\n\n"
+		},
+		month = {
+			directory = "monthly",
+			filename = "%Y-%m",
+			template = "# %B %Y\n\n"
+		},
 	}
 }
 
