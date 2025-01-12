@@ -44,6 +44,7 @@ local default = {
 		-- recommended to change this
 		root = "~/daily-notes",
 		filetype = "md",
+		write_on_open = true,
 		day = {
 			directory = "daily",
 			filename = "%Y-%m-%d",

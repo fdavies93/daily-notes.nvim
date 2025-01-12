@@ -83,7 +83,10 @@ M.open_note = function(period, opts)
 
 	local template = render_template(period, opts)
 	if template ~= nil then
-		vim.api.nvim_put(template, "", false, true)
+		vim.api.nvim_put(template, "", false, false)
+	end
+	if opts.writing.write_on_open then
+		vim.cmd('w')
 	end
 end
 
