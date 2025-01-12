@@ -24,10 +24,28 @@ should try to do one thing and do it well.
 
 ```lua
 -- install from local repo
-{ dir = "~/daily-notes.nvim", opts = {} }
+-- this is just an example; you can just as well use empty opts {}
+{
+    dir = "~/daily-notes.nvim",
+    opts = {
+        writing = {
+            root = "~/zettelkasten/daily-notes"
+        }
+    }
+}
 -- install from github repo
 { "fdavies93/daily-notes.nvim", opts = {} }
 ```
+
+## Configuration
+
+The most important option is `writing.root`. This controls where
+daily-notes.nvim tries to put new notes and open existing notes. This should
+integrate with existing setups if you set the `writing.day` and other options to
+match your current filename formats.
+
+For a full list of config options,
+[see the default config here](./lua/daily-notes/config.lua).
 
 ## Modules
 
