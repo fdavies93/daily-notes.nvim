@@ -4,6 +4,9 @@ local M = {}
 
 local default = {
 	parsing = {
+		-- The default string to send to fuzzy_time for parsing
+		-- if nothing
+		default = "today",
 		-- Needed to iterate correctly through formats
 		timestamp_order = { "day", "month", "year" },
 		timestamp_formats = {

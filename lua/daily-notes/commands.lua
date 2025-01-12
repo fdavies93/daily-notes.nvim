@@ -20,6 +20,10 @@ end
 M.daily_note = function(opts)
 	local as_str = table.concat(opts.fargs, ' ')
 	local c = config.get()
+
+	if string.len(as_str) == 0 then
+		as_str = c.parsing.default
+	end
 	local period = fuzzy_time.get_period(as_str, c.parsing)
 	if period == nil then
 		print("Couldn't parse date \"" .. as_str .. "\"!")
