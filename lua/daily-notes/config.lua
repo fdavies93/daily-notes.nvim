@@ -1,3 +1,5 @@
+local utils = require("daily-notes.utils")
+
 local M = {}
 
 local default = {
@@ -56,6 +58,14 @@ local default = {
 		},
 	}
 }
+
+M.setup = function(opts)
+	local src = {}
+	if opts ~= nil then
+		src = opts
+	end
+	utils.merge_table_to_target(src, default)
+end
 
 M.get = function()
 	return default
