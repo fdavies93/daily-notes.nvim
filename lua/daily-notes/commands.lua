@@ -7,7 +7,7 @@ local files = require("daily-notes.files")
 M.fuzzy_time = function(opts)
 	local as_str = table.concat(opts.fargs, ' ')
 	local c = config.get()
-	local date = fuzzy_time.get_period(as_str, c.parsing)
+	local date = fuzzy_time.get_period(as_str, c)
 	if date == nil then
 		print("Couldn't parse date \"" .. as_str .. "\"!")
 		return
@@ -24,7 +24,7 @@ M.daily_note = function(opts)
 	if string.len(as_str) == 0 then
 		as_str = c.parsing.default
 	end
-	local period = fuzzy_time.get_period(as_str, c.parsing)
+	local period = fuzzy_time.get_period(as_str, c)
 	if period == nil then
 		print("Couldn't parse date \"" .. as_str .. "\"!")
 		return

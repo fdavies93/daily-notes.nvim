@@ -38,7 +38,7 @@ local default = {
 				"%Y"
 			}
 		},
-		week_starts = 2, -- i.e Monday
+		week_starts = "monday",
 	},
 	writing = {
 		-- recommended to change this
@@ -60,6 +60,11 @@ local default = {
 			filename = "%Y-%m",
 			template = "# %B %Y\n\n"
 		},
+		year = {
+			directory = "yearly",
+			filename = "%Y",
+			template = "# %Y\n\n"
+		}
 	}
 }
 
