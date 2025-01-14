@@ -270,6 +270,29 @@ M.number_offset = function(inverse)
 	return closure
 end
 
+M.word_offset = function(date_string, opts)
+	local parser = M.select({
+		M.match("next%s*"),
+		M.match("last%s*"),
+		M.match("previous%s*"),
+		M.match("prev%s*"),
+		M.match("this%s*")
+	})
+	local token = parser(date_string, opts)
+	if token == nil then
+		return nil
+	end
+	local stripped = string.gsub(token.captured, "%s+", "")
+	local offset_val = 0
+	if stripped == "next" then
+		offset_val = 1
+	end
+	if stripped == "last" or stripped == "previous" or stripped == "prev" then
+		offset_val = -1
+	end
+	return { type = "offset", offset = offset_val, str = token.str }
+end
+
 M.join_fixed_period = function(tokens, opts)
 	-- otherwise "2 days ago" will be rejected in favor of "2 days"
 	if string.len(tokens[#tokens].str) > 0 then
@@ -318,6 +341,10 @@ M.fixed_period_offset = function(date_string, opts)
 			M.number_offset(true),
 			M.period,
 			M.match("ago%s*")
+		}, M.join_fixed_period),
+		M.join({
+			M.word_offset,
+			M.period
 		}, M.join_fixed_period)
 	})
 	local token = parser(date_string, opts)
