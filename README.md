@@ -2,21 +2,9 @@
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-> [!warning]
->
-> This plugin isn't ready yet, but it works. At the moment it supports basic
-> timestamps and templating; this is so I can begin
-> [dogfooding](https://en.wikipedia.org/wiki/Eating_your_own_dog_food) it.
->
-> If you want to try it out, clone the repo and use the lazy.nvim instruction
-> below to run locally.
-
-An nvim plugin to enable creating daily and weekly notes. Inspired by the
-Obsidian feature of the same name and
+An nvim plugin to enable creating periodic notes for journals and planning.
+Inspired by the Obsidian feature of the same name and
 [Journal.nvim](https://github.com/jakobkhansen/journal.nvim).
-
-It _only_ supports this feature, in line with the UNIX philosophy that programs
-should try to do one thing and do it well.
 
 ## Installation
 
@@ -37,6 +25,10 @@ should try to do one thing and do it well.
 { "fdavies93/daily-notes.nvim", opts = {} }
 ```
 
+Note that this plugin is only tested on Linux for now. It should work on other
+UNIX systems (i.e. WSL, MacOS, BSD), but this isn't guaranteed. Windows probably
+won't work due to differences in file and date handling.
+
 ## Configuration
 
 The most important option is `writing.root`. This controls where
@@ -47,9 +39,63 @@ match your current filename formats.
 For a full list of config options,
 [see the default config here](./lua/daily-notes/config.lua).
 
-## Modules
+## Usage
 
-### fuzzy-time.lua
+Setup your configuration so the directories and templates follow your preferred
+date format.
 
-This resolves strings in plain English into UNIX timestamps. It's used to
-implement date parsing for creating new notes.
+```vim
+:DailyNotes day +1
+:DailyNotes next week
+:FuzzyTime 2025
+```
+
+daily-notes.nvim exports `:DailyNote` and `:FuzzyTime` user commands.
+
+`:DailyNote` creates a new note or opens a note if one already exists.
+
+`:FuzzyTime` gives a timestamp and period for the given input and can be used
+programatically or as a way to do a 'dry run' of `:DailyNote`
+
+## Parsed Date Formats
+
+daily-notes.nvim implements a
+[recursive descent parser](https://en.wikipedia.org/wiki/Recursive_descent_parser)
+to resolve dates in English into timestamps and create files.
+
+Dates are parsed in the following order:
+
+1. Timestamps
+2. Unambiguous semantic dates (e.g. 'today')
+3. Ambiguous semantic dates (e.g. 'this Tuesday')
+
+Ambiguous semantic dates are currently not implemented pending writing the
+algorithm to resolve them.
+
+```
+-- PERIOD is ("day" | "week" | "month" | "year") ~ "s"?
+
+-- Unambiguous semantic dates
+today
+tomorrow
+yesterday
+[+/-]NUM PERIOD
+PERIOD [+/-]NUM
+PERIOD -- the same as 'this PERIOD'
+this PERIOD
+next PERIOD
+(last | previous | prev) PERIOD
+in [+/-]NUM PERIOD
+[+/-]NUM PERIOD ago
+```
+
+For the details of date parsing
+[see the fuzzy time module](./lua/daily-notes/fuzzy-time.lua).
+
+For all timestamp formats [see default config](./lua/daily-notes/config.lua).
+Timestamps for weeks are currently not implemented.
+
+## Formatting Date Formats
+
+Currently we just use the default `vim.fn.strftime` function for rendering
+filenames and templates, but this may be replaced in the future.
