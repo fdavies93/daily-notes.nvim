@@ -25,9 +25,10 @@ Inspired by the Obsidian feature of the same name and
 { "fdavies93/daily-notes.nvim", opts = {} }
 ```
 
-Note that this plugin is only tested on Linux for now. It should work on other
-UNIX systems (i.e. WSL, MacOS, BSD), but this isn't guaranteed. Windows probably
-won't work due to differences in file and date handling.
+Note that this plugin is only tested on my personal Arch Linux for now. It
+_should_ work on other UNIX systems (i.e. WSL, MacOS, BSD), but this isn't
+guaranteed. Windows probably won't work due to differences in file and date
+handling.
 
 ## Configuration
 
@@ -45,8 +46,9 @@ Setup your configuration so the directories and templates follow your preferred
 date format.
 
 ```vim
-:DailyNotes day +1
-:DailyNotes next week
+:DailyNote day +1
+:DailyNote next week
+:DailyNote tuesday
 :FuzzyTime 2025
 ```
 
@@ -69,8 +71,8 @@ Dates are parsed in the following order:
 2. Unambiguous semantic dates (e.g. 'today')
 3. Ambiguous semantic dates (e.g. 'this Tuesday')
 
-Ambiguous semantic dates are currently not implemented pending writing the
-algorithm to resolve them.
+The different algorithms for resolving ambiguous dates can be selected in the
+config at `parsing.resolve_strategy`.
 
 ```
 -- PERIOD is ("day" | "week" | "month" | "year") ~ "s"?
@@ -88,12 +90,19 @@ next PERIOD
 in [+/-]NUM PERIOD
 [+/-]NUM PERIOD ago
 
-
 -- Ambiguous semantic dates
 
 -- WEEKDAY is ("monday" | "tuesday" | "wednesday" | "thursday" | "friday"
--- | "saturday" | "sunday" )
+-- | "saturday" | "sunday" ) - and their 3-letter prefixes e.g. "tue"
 
+-- the meaning of this / next / last is determined by config
+WEEKDAY
+this WEEKDAY
+next WEEKDAY
+(last | previous | prev) WEEKDAY
+-- these always use the current week +/- weeks
+[+/-]NUM WEEKDAY
+WEEKDAY [+/-]NUM
 
 ```
 
