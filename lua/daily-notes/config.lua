@@ -54,6 +54,7 @@ local default = {
 				-- this := closest | forward | back | period
 				-- next := closest | adjust_this | period
 				-- prev := closest | adjust_this | period
+				-- numerical offsets always use adjust_this
 				this = "closest", -- always pick the closest
 				next = "adjust_this",
 				prev = "adjust_this"

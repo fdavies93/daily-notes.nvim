@@ -410,7 +410,7 @@ M.match_weekday = function(date_string, opts)
 		table.insert(valid_names, M.match(v .. "%s*"))
 		table.insert(valid_names, M.match(string.sub(v, 1, 3) .. "%s*"))
 	end
-	return M.select(valid_names)(date_string)
+	return M.select(valid_names)(date_string, opts)
 end
 
 M.single_token_weekday = function(date_string, opts)
@@ -422,11 +422,81 @@ M.single_token_weekday = function(date_string, opts)
 	return { type = "period", period = { date, "day" }, str = "" }
 end
 
+M.join_weekday_verbal = function(tokens, opts)
+	local day_name = tokens[2].captured
+	local offset = tokens[1].offset
+
+	local this_dt = M.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
+	local period_dt = M.get_weekday_from_today(day_name, "period", opts)
+
+	local token = { type = "period", period = { this_dt, "day" }, str = tokens[2].str }
+
+	if offset == 1 then
+		local next_mode = opts.parsing.resolve_strategy.weekday.next
+		if next_mode == "closest" then
+			token.period[1] = M.get_weekday_from_today(day_name, "forward", opts)
+		elseif next_mode == "adjust_this" then
+			token.period[1] = M.offset_date(this_dt, { day = 7 })
+		elseif next_mode == "period" then
+			token.period[1] = M.offset_date(period_dt, { day = 7 })
+		end
+	elseif offset == -1 then
+		local prev_mode = opts.parsing.resolve_strategy.weekday.prev
+		if prev_mode == "closest" then
+			token.period[1] = M.get_weekday_from_today(day_name, "back", opts)
+		elseif prev_mode == "adjust_this" then
+			token.period[1] = M.offset_date(this_dt, { day = -7 })
+		elseif prev_mode == "period" then
+			token.period[1] = M.offset_date(period_dt, { day = -7 })
+		end
+	end
+	return token
+end
+
+M.join_weekday_numerical = function(tokens, opts)
+	local day_name = nil
+	for _, token in pairs(tokens) do
+		if token.type == "match" then
+			day_name = string.gsub(token.captured, "%s", "")
+			break
+		end
+	end
+	if day_name == nil then
+		return nil
+	end
+	local offset = 0
+	for _, token in pairs(tokens) do
+		if token.type == "offset" then
+			offset = token.offset * 7
+			break
+		end
+	end
+	local this_dt = M.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
+	return { type = "period", period = { M.offset_date(this_dt, { day = offset }), "day" }, str = tokens[2].str }
+end
+
+M.weekday_verbal_offset = function(date_string, opts)
+	local parser = M.join({
+		M.word_offset,
+		M.match_weekday
+	}, M.join_weekday_verbal)
+
+	return parser(date_string, opts)
+end
+
+M.weekday_number_offset = function(date_string, opts)
+	local parser = M.select({
+		M.join({ M.number_offset(false), M.match_weekday }, M.join_weekday_numerical),
+		M.join({ M.match_weekday, M.number_offset(false) }, M.join_weekday_numerical)
+	})
+	return parser(date_string, opts)
+end
+
 M.get_ambiguous_period = function(date_string, opts)
 	local parser = M.select({
 		M.single_token_weekday,
-		-- weekday_verbal_offset
-		-- weekday_number_offset
+		M.weekday_verbal_offset,
+		M.weekday_number_offset
 	})
 	return parser(date_string, opts)
 end
