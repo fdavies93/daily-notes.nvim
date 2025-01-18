@@ -87,6 +87,14 @@ next PERIOD
 (last | previous | prev) PERIOD
 in [+/-]NUM PERIOD
 [+/-]NUM PERIOD ago
+
+
+-- Ambiguous semantic dates
+
+-- WEEKDAY is ("monday" | "tuesday" | "wednesday" | "thursday" | "friday"
+-- | "saturday" | "sunday" )
+
+
 ```
 
 For the details of date parsing

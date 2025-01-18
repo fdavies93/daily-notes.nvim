@@ -38,6 +38,27 @@ local default = {
 				"%Y"
 			}
 		},
+		resolve_strategy = {
+			weekday = {
+				-- closest: the shortest number of days to match
+				-- the name of the weekday / month
+				-- for next this always goes forward
+				-- for prev this always goes back
+				-- for this it checks both directions
+				-- forward: count forwards for match
+				-- back: count backwards for match
+				-- adjust_this: use the same algorithm as this,
+				-- then add / subtract weeks
+				-- period: use dates in the same period
+				-- (week / year)
+				-- this := closest | forward | back | period
+				-- next := closest | adjust_this | period
+				-- prev := closest | adjust_this | period
+				this = "closest", -- always pick the closest
+				next = "adjust_this",
+				prev = "adjust_this"
+			},
+		},
 		week_starts = "monday",
 	},
 	writing = {

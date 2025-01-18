@@ -59,11 +59,17 @@ M.get_day_of_week = function(day_string, opts)
 	local days = M.get_days_of_week(opts)
 
 	for i, day_name in ipairs(days) do
-		if day_name == day_string then
+		if day_name == day_string or string.sub(day_name, 1, 3) == day_string then
 			return i
 		end
 	end
 	return nil
+end
+
+M.get_today_name = function(opts)
+	local dt = M.get_today(opts)
+	local time = os.time(dt)
+	return string.lower(vim.fn.strftime("%A", time))
 end
 
 M.get_today = function(opts)
@@ -79,7 +85,7 @@ M.get_this_week = function(opts)
 	local time = os.time(dt)
 	local today_str = string.lower(vim.fn.strftime("%A", time))
 	local dow = M.get_day_of_week(today_str, opts)
-	dt = M.offset_date(dt, { days = (-dow + 1) })
+	dt = M.offset_date(dt, { day = (-dow + 1) })
 	return dt
 end
 
@@ -92,6 +98,7 @@ end
 M.get_this_year = function(opts)
 	local dt = M.get_this_month(opts)
 	dt.month = 1
+	return dt
 end
 
 M.offset_date = function(date, offset)
@@ -113,7 +120,7 @@ M.offset_date = function(date, offset)
 
 	date_table.month = date_table.month + offset.month
 	if date_table.month > 12 then
-		date_table.month = 1
+		date_table.month = (date_table.month % 12)
 		date_table.year = date_table.year + 1
 	end
 
@@ -363,9 +370,71 @@ M.get_relative_fixed_period = function(date_string, opts)
 	return parser(date_string, opts)
 end
 
+-- returns a date table or nil
+-- modes:
+-- forward / back / closest / period
+M.get_weekday_from_today = function(day_str, mode, opts)
+	local dow = M.get_day_of_week(day_str, opts)
+	if dow == nil then
+		return nil
+	end
+	local today_dow = M.get_day_of_week(M.get_today_name(opts), opts)
+	local today_dt = M.get_today(opts)
+	local offset = dow - today_dow
+	local forward_offset = 0
+	local backward_offset = 0
+
+	if offset > 0 then
+		forward_offset = offset
+		backward_offset = offset - 7
+	elseif offset < 0 then
+		forward_offset = offset + 7
+		backward_offset = offset
+	end
+
+	if mode == "forward" or (mode == "closest" and math.abs(forward_offset) < math.abs(backward_offset)) then
+		offset = forward_offset
+	elseif mode == "back" or (mode == "closest" and math.abs(backward_offset) < math.abs(forward_offset)) then
+		offset = backward_offset
+	elseif mode ~= "period" then
+		return nil
+	end
+
+	return M.offset_date(today_dt, { day = offset })
+end
+
+M.match_weekday = function(date_string, opts)
+	local valid_names = {}
+	local day_names = M.get_days_of_week(opts)
+	for _, v in pairs(day_names) do
+		table.insert(valid_names, M.match(v .. "%s*"))
+		table.insert(valid_names, M.match(string.sub(v, 1, 3) .. "%s*"))
+	end
+	return M.select(valid_names)(date_string)
+end
+
+M.single_token_weekday = function(date_string, opts)
+	local mode = opts.parsing.resolve_strategy.weekday.this
+	local date = M.get_weekday_from_today(date_string, mode, opts)
+	if date == nil then
+		return nil
+	end
+	return { type = "period", period = { date, "day" }, str = "" }
+end
+
+M.get_ambiguous_period = function(date_string, opts)
+	local parser = M.select({
+		M.single_token_weekday,
+		-- weekday_verbal_offset
+		-- weekday_number_offset
+	})
+	return parser(date_string, opts)
+end
+
 M.get_relative_period = function(date_string, opts)
 	local parser = M.select({
-		M.get_relative_fixed_period
+		M.get_relative_fixed_period,
+		M.get_ambiguous_period
 	})
 	return parser(date_string, opts)
 end
