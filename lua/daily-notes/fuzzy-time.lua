@@ -29,7 +29,16 @@ M.get_timestamp = function(date_string, opts)
 end
 
 M.get_days_of_week = function(opts)
-	local basis = { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" }
+	-- this algorithm doesn't require assumptions about what the basis order
+	-- actually is, so we can generate the day names pretty independently
+	local basis = {}
+
+	local cur_time = os.time()
+	for _ = 0, 6 do
+		table.insert(basis, string.lower(os.date("%A", cur_time)))
+		cur_time = cur_time + (24 * 60 * 60)
+	end
+
 	local days = {}
 
 	local first_day_i = 1
@@ -55,6 +64,27 @@ M.get_days_of_week = function(opts)
 	return days
 end
 
+M.get_months_of_year = function(opts)
+	local months = {}
+	local dt = { day = 1, month = 1, year = 2000 }
+	for _ = 0, 11 do
+		local time = os.time(dt)
+		table.insert(months, string.lower(os.date("%B", time)))
+		dt.month = dt.month + 1
+	end
+	return months
+end
+
+M.get_month_of_year = function(month_string, opts)
+	local months = M.get_months_of_year(opts)
+	for i, month in ipairs(months) do
+		if string.lower(month_string) == month then
+			return i
+		end
+	end
+	return nil
+end
+
 M.get_day_of_week = function(day_string, opts)
 	local days = M.get_days_of_week(opts)
 
@@ -64,6 +94,17 @@ M.get_day_of_week = function(day_string, opts)
 		end
 	end
 	return nil
+end
+
+M.get_week_of_year = function(dt, opts)
+	local jan_1 = { year = dt.year, month = 1, day = 1 }
+	local dow_jan_1 = M.get_day_of_week(os.date("%A"), opts)
+	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
+	local basis_ts = os.time(week_basis)
+	local ts = os.time(dt)
+	local diff_in_weeks = (ts - basis_ts) / (60 * 60 * 24 * 7)
+	-- if we wanted to start from 0 (and end at 52) we'd use floor
+	return math.ceil(diff_in_weeks)
 end
 
 M.get_today_name = function(opts)
@@ -524,5 +565,4 @@ M.get_period = function(date_string, opts)
 		return token.period
 	end
 end
-
 return M
