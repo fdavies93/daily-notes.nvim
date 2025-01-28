@@ -98,10 +98,11 @@ M.get_days_of_week = function(opts)
 end
 
 M.get_day_of_week = function(day_string, opts)
+	local ds = string.lower(day_string)
 	local days = M.get_days_of_week(opts)
 
 	for i, day_name in ipairs(days) do
-		if day_name == day_string or string.sub(day_name, 1, 3) == day_string then
+		if day_name == ds or string.sub(day_name, 1, 3) == ds then
 			return i
 		end
 	end
@@ -109,14 +110,15 @@ M.get_day_of_week = function(day_string, opts)
 end
 
 M.get_week_of_year = function(dt, opts)
-	local jan_1 = { year = dt.year, month = 1, day = 1 }
-	local dow_jan_1 = M.get_day_of_week(os.date("%A"), opts)
+	local jan_1 = { year = dt.year, month = 1, day = 1, hour = 0, minute = 0, second = 0 }
+	local ts_jan_1 = os.time(jan_1)
+	local dow_jan_1 = M.get_day_of_week(os.date("%A", ts_jan_1), opts)
 	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
 	local basis_ts = os.time(week_basis)
-	local ts = os.time(dt)
-	local diff_in_weeks = (ts - basis_ts) / (60 * 60 * 24 * 7)
-	-- if we wanted to start from 0 (and end at 52) we'd use floor
-	return math.ceil(diff_in_weeks)
+	local ts = os.time(M.get_this_week(opts))
+	local diff_in_weeks = (ts - basis_ts) / (60.0 * 60.0 * 24.0 * 7.0)
+	-- if we wanted to start from 0 (and end at 52), don't add 1
+	return math.ceil(diff_in_weeks) + 1
 end
 
 M.get_this_week = function(opts)
@@ -188,6 +190,15 @@ M.get_today = function(opts)
 	return date_table
 end
 
-
+M.strftime = function(format, dt, opts)
+	local week_of_year = M.get_week_of_year(dt, opts)
+	local timestamp = os.time(dt)
+	local day_str = os.date("%A", timestamp)
+	local day_of_week = M.get_day_of_week(day_str, opts)
+	local working_string = string.gsub(format, "%%W", string.format("%02d", week_of_year))
+	working_string = string.gsub(working_string, "%%w", string.format("%d", day_of_week))
+	working_string = os.date(working_string, timestamp)
+	return working_string
+end
 
 return M
