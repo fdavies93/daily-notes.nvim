@@ -10,17 +10,12 @@ local build_file_path = function(period, opts)
 		return nil
 	end
 
-	local path = opts.writing.root
-	if opts.writing[p_type].directory then
-		path = path .. '/' .. opts.writing[p_type].directory
-	end
-
 	-- render filename; for now we just use strftime
 	-- later we can perhaps use a fancier method from date module
 	local timestamp = os.time(period[1])
 	local filename = vim.fn.strftime(opts.writing[p_type].filename, timestamp)
 
-	path = path .. '/' .. filename
+	local path = opts.writing.root .. '/' .. filename
 
 	path = path .. '.' .. opts.writing.filetype
 	return path
