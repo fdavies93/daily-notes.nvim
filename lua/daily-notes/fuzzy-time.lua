@@ -1,3 +1,5 @@
+local datetime = require("daily-notes.datetime")
+
 local M = {}
 
 M.get_timestamp = function(date_string, opts)
@@ -28,159 +30,18 @@ M.get_timestamp = function(date_string, opts)
 	return nil
 end
 
-M.get_days_of_week = function(opts)
-	-- this algorithm doesn't require assumptions about what the basis order
-	-- actually is, so we can generate the day names pretty independently
-	local basis = {}
-
-	local cur_time = os.time()
-	for _ = 0, 6 do
-		table.insert(basis, string.lower(os.date("%A", cur_time)))
-		cur_time = cur_time + (24 * 60 * 60)
-	end
-
-	local days = {}
-
-	local first_day_i = 1
-	-- find index of first day
-	for i, day in ipairs(basis) do
-		if day == opts.parsing.week_starts then
-			first_day_i = i
-			break
-		end
-	end
-
-	local i = 0
-	while i < 7 do
-		local index = first_day_i + i
-		if index > 7 then
-			index = index - 7
-		end
-		local day_name = basis[index]
-		table.insert(days, day_name)
-		i = i + 1
-	end
-
-	return days
-end
-
-M.get_months_of_year = function(opts)
-	local months = {}
-	local dt = { day = 1, month = 1, year = 2000 }
-	for _ = 0, 11 do
-		local time = os.time(dt)
-		table.insert(months, string.lower(os.date("%B", time)))
-		dt.month = dt.month + 1
-	end
-	return months
-end
-
-M.get_month_of_year = function(month_string, opts)
-	local months = M.get_months_of_year(opts)
-	for i, month in ipairs(months) do
-		if string.lower(month_string) == month then
-			return i
-		end
-	end
-	return nil
-end
-
-M.get_day_of_week = function(day_string, opts)
-	local days = M.get_days_of_week(opts)
-
-	for i, day_name in ipairs(days) do
-		if day_name == day_string or string.sub(day_name, 1, 3) == day_string then
-			return i
-		end
-	end
-	return nil
-end
-
-M.get_week_of_year = function(dt, opts)
-	local jan_1 = { year = dt.year, month = 1, day = 1 }
-	local dow_jan_1 = M.get_day_of_week(os.date("%A"), opts)
-	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
-	local basis_ts = os.time(week_basis)
-	local ts = os.time(dt)
-	local diff_in_weeks = (ts - basis_ts) / (60 * 60 * 24 * 7)
-	-- if we wanted to start from 0 (and end at 52) we'd use floor
-	return math.ceil(diff_in_weeks)
-end
-
-M.get_today_name = function(opts)
-	local dt = M.get_today(opts)
-	local time = os.time(dt)
-	return string.lower(vim.fn.strftime("%A", time))
-end
-
-M.get_today = function(opts)
-	local date_table = os.date("*t")
-	date_table.sec = 0
-	date_table.min = 0
-	date_table.hour = 0
-	return date_table
-end
-
-M.get_this_week = function(opts)
-	local dt = M.get_today(opts)
-	local time = os.time(dt)
-	local today_str = string.lower(vim.fn.strftime("%A", time))
-	local dow = M.get_day_of_week(today_str, opts)
-	dt = M.offset_date(dt, { day = (-dow + 1) })
-	return dt
-end
-
-M.get_this_month = function(opts)
-	local dt = M.get_today(opts)
-	dt.day = 1
-	return dt
-end
-
-M.get_this_year = function(opts)
-	local dt = M.get_this_month(opts)
-	dt.month = 1
-	return dt
-end
-
-M.offset_date = function(date, offset)
-	local timestamp = os.time(date)
-
-	for _, tag in ipairs({ "second", "minute", "hour", "day", "week", "month", "year" }) do
-		if offset[tag] == nil then
-			offset[tag] = 0
-		end
-	end
-
-	timestamp = timestamp + offset.second
-	timestamp = timestamp + (offset.minute * 60)
-	timestamp = timestamp + (offset.hour * 60 * 60)
-	timestamp = timestamp + (offset.day * 24 * 60 * 60)
-	timestamp = timestamp + (offset.week * 24 * 60 * 60 * 7)
-
-	local date_table = os.date("*t", timestamp)
-
-	date_table.month = date_table.month + offset.month
-	if date_table.month > 12 then
-		date_table.month = (date_table.month % 12)
-		date_table.year = date_table.year + 1
-	end
-
-	date_table.year = date_table.year + offset.year
-
-	return date_table
-end
 
 M.today = function(date_string, opts)
 	if date_string == "today" then
-		return { str = "", period = { M.get_today(), "day" }, type = "period" }
+		return { str = "", period = { datetime.get_today(), "day" }, type = "period" }
 	end
 	return nil
 end
 
 M.tomorrow = function(date_string, opts)
 	if date_string == "tomorrow" then
-		local period = { M.offset_date(
-			M.get_today(),
+		local period = { datetime.offset_date(
+			datetime.get_today(),
 			{ day = 1 }
 		), "day" }
 		return { str = "", period = period, type = "period" }
@@ -190,8 +51,8 @@ end
 
 M.yesterday = function(date_string, opts)
 	if date_string == "yesterday" then
-		local period = { M.offset_date(
-			M.get_today(),
+		local period = { datetime.offset_date(
+			datetime.get_today(),
 			{ day = -1 }
 		), "day" }
 		return { str = "", period = period, type = "period" }
@@ -252,15 +113,6 @@ M.match = function(pattern)
 	return closure
 end
 
-M.get_this_period = function(period, opts)
-	local map = {
-		day = M.get_today,
-		week = M.get_this_week,
-		month = M.get_this_month,
-		year = M.get_this_year
-	}
-	return { map[period](opts), period }
-end
 
 M.period = function(date_string, opts)
 	local parser = M.select({
@@ -293,7 +145,7 @@ M.single_token_fixed_period = function(date_string, opts)
 	return {
 		str = "",
 		type = "period",
-		period = M.get_this_period(period_no_timestamp.period, opts)
+		period = datetime.get_this_period(period_no_timestamp.period, opts)
 	}
 end
 
@@ -356,12 +208,12 @@ M.join_fixed_period = function(tokens, opts)
 		end
 	end
 
-	local dt = M.get_this_period(period_str, opts)
+	local dt = datetime.get_this_period(period_str, opts)
 	local offset_obj = {}
 	local last_str = tokens[#tokens].str
 	offset_obj[period_str] = offset
 
-	dt = M.offset_date(dt[1], offset_obj)
+	dt = datetime.offset_date(dt[1], offset_obj)
 
 	return {
 		type = "period",
@@ -411,42 +263,9 @@ M.get_relative_fixed_period = function(date_string, opts)
 	return parser(date_string, opts)
 end
 
--- returns a date table or nil
--- modes:
--- forward / back / closest / period
-M.get_weekday_from_today = function(day_str, mode, opts)
-	local dow = M.get_day_of_week(day_str, opts)
-	if dow == nil then
-		return nil
-	end
-	local today_dow = M.get_day_of_week(M.get_today_name(opts), opts)
-	local today_dt = M.get_today(opts)
-	local offset = dow - today_dow
-	local forward_offset = 0
-	local backward_offset = 0
-
-	if offset > 0 then
-		forward_offset = offset
-		backward_offset = offset - 7
-	elseif offset < 0 then
-		forward_offset = offset + 7
-		backward_offset = offset
-	end
-
-	if mode == "forward" or (mode == "closest" and math.abs(forward_offset) < math.abs(backward_offset)) then
-		offset = forward_offset
-	elseif mode == "back" or (mode == "closest" and math.abs(backward_offset) < math.abs(forward_offset)) then
-		offset = backward_offset
-	elseif mode ~= "period" then
-		return nil
-	end
-
-	return M.offset_date(today_dt, { day = offset })
-end
-
 M.match_weekday = function(date_string, opts)
 	local valid_names = {}
-	local day_names = M.get_days_of_week(opts)
+	local day_names = datetime.get_days_of_week(opts)
 	for _, v in pairs(day_names) do
 		table.insert(valid_names, M.match(v .. "%s*"))
 		table.insert(valid_names, M.match(string.sub(v, 1, 3) .. "%s*"))
@@ -456,7 +275,7 @@ end
 
 M.single_token_weekday = function(date_string, opts)
 	local mode = opts.parsing.resolve_strategy.weekday.this
-	local date = M.get_weekday_from_today(date_string, mode, opts)
+	local date = datetime.get_weekday_from_today(date_string, mode, opts)
 	if date == nil then
 		return nil
 	end
@@ -467,28 +286,28 @@ M.join_weekday_verbal = function(tokens, opts)
 	local day_name = tokens[2].captured
 	local offset = tokens[1].offset
 
-	local this_dt = M.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
-	local period_dt = M.get_weekday_from_today(day_name, "period", opts)
+	local this_dt = datetime.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
+	local period_dt = datetime.get_weekday_from_today(day_name, "period", opts)
 
 	local token = { type = "period", period = { this_dt, "day" }, str = tokens[2].str }
 
 	if offset == 1 then
 		local next_mode = opts.parsing.resolve_strategy.weekday.next
 		if next_mode == "closest" then
-			token.period[1] = M.get_weekday_from_today(day_name, "forward", opts)
+			token.period[1] = datetime.get_weekday_from_today(day_name, "forward", opts)
 		elseif next_mode == "adjust_this" then
-			token.period[1] = M.offset_date(this_dt, { day = 7 })
+			token.period[1] = datetime.offset_date(this_dt, { day = 7 })
 		elseif next_mode == "period" then
-			token.period[1] = M.offset_date(period_dt, { day = 7 })
+			token.period[1] = datetime.offset_date(period_dt, { day = 7 })
 		end
 	elseif offset == -1 then
 		local prev_mode = opts.parsing.resolve_strategy.weekday.prev
 		if prev_mode == "closest" then
-			token.period[1] = M.get_weekday_from_today(day_name, "back", opts)
+			token.period[1] = datetime.get_weekday_from_today(day_name, "back", opts)
 		elseif prev_mode == "adjust_this" then
-			token.period[1] = M.offset_date(this_dt, { day = -7 })
+			token.period[1] = datetime.offset_date(this_dt, { day = -7 })
 		elseif prev_mode == "period" then
-			token.period[1] = M.offset_date(period_dt, { day = -7 })
+			token.period[1] = datetime.offset_date(period_dt, { day = -7 })
 		end
 	end
 	return token
@@ -512,8 +331,13 @@ M.join_weekday_numerical = function(tokens, opts)
 			break
 		end
 	end
-	local this_dt = M.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
-	return { type = "period", period = { M.offset_date(this_dt, { day = offset }), "day" }, str = tokens[2].str }
+	local this_dt = datetime.get_weekday_from_today(day_name, opts.parsing.resolve_strategy.weekday.this, opts)
+	return {
+		type = "period",
+		period = { datetime.offset_date(this_dt, { day = offset }), "day" },
+		str = tokens[2]
+		    .str
+	}
 end
 
 M.weekday_verbal_offset = function(date_string, opts)
