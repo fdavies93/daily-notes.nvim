@@ -174,7 +174,8 @@ end
 M.get_month_of_year = function(month_string, opts)
 	local months = M.get_months_of_year(opts)
 	for i, month in ipairs(months) do
-		if string.lower(month_string) == month then
+		local month_short = string.sub(month, 1, 3)
+		if string.lower(month_string) == month or string.lower(month_string) == month_short then
 			return i
 		end
 	end

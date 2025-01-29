@@ -5,8 +5,11 @@ local M = {}
 local default = {
 	parsing = {
 		-- The default string to send to fuzzy_time for parsing
-		-- if nothing
+		-- if nothing else is entered
 		default = "today",
+		-- This is localised so needs changing if you're not using
+		-- English
+		week_starts = "monday",
 		-- Needed to iterate correctly through formats
 		timestamp_order = { "day", "month", "year" },
 		timestamp_formats = {
@@ -60,7 +63,6 @@ local default = {
 				prev = "adjust_this"
 			},
 		},
-		week_starts = "monday",
 	},
 	writing = {
 		-- recommended to change this
@@ -80,7 +82,6 @@ local default = {
 			template = "# %B %Y\n\n"
 		},
 		year = {
-			directory = "yearly",
 			filename = "%Y",
 			template = "# %Y\n\n"
 		}

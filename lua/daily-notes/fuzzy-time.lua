@@ -404,11 +404,22 @@ M.weekday_number_offset = function(date_string, opts)
 	return parser(date_string, opts)
 end
 
+M.single_token_month = function(date_string, opts)
+	local month_num = datetime.get_month_of_year(date_string, opts)
+	if (month_num == nil) then
+		return nil
+	end
+	local dt = datetime.get_this_year(opts)
+	dt.month = month_num
+	return { type = "period", period = { dt, "month" }, str = "" }
+end
+
 M.get_ambiguous_period = function(date_string, opts)
 	local parser = M.select({
 		M.single_token_weekday,
 		M.weekday_verbal_offset,
-		M.weekday_number_offset
+		M.weekday_number_offset,
+		M.single_token_month,
 	})
 	return parser(date_string, opts)
 end
