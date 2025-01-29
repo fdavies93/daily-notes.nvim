@@ -47,7 +47,6 @@ M.offset_date = function(date, offset)
 	timestamp = timestamp + (offset.hour * 60 * 60)
 	timestamp = timestamp + (offset.day * 24 * 60 * 60)
 	timestamp = timestamp + (offset.week * 24 * 60 * 60 * 7)
-
 	local date_table = os.date("*t", timestamp)
 
 	date_table.month = date_table.month + offset.month
@@ -57,7 +56,6 @@ M.offset_date = function(date, offset)
 	end
 
 	date_table.year = date_table.year + offset.year
-
 	return date_table
 end
 
@@ -109,16 +107,25 @@ M.get_day_of_week = function(day_string, opts)
 	return nil
 end
 
+M.get_week_of_year_dt = function(week_no, year_no, opts)
+	local jan_1 = { day = 1, month = 1, year = year_no, hour = 0, minute = 0, second = 0 }
+	local jan_1_ts = os.time(jan_1)
+	local jan_1_weekday = os.date("%A", jan_1_ts)
+	local jan_1_weekday_no = M.get_day_of_week(jan_1_weekday, opts)
+	local week_start_dt = M.offset_date(jan_1, { day = (1 - jan_1_weekday_no), week = week_no })
+	return week_start_dt
+end
+
 M.get_week_of_year = function(dt, opts)
 	local jan_1 = { year = dt.year, month = 1, day = 1, hour = 0, minute = 0, second = 0 }
 	local ts_jan_1 = os.time(jan_1)
 	local dow_jan_1 = M.get_day_of_week(os.date("%A", ts_jan_1), opts)
 	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
 	local basis_ts = os.time(week_basis)
-	local ts = os.time(M.get_this_week(opts))
+	local ts = os.time(dt)
 	local diff_in_weeks = (ts - basis_ts) / (60.0 * 60.0 * 24.0 * 7.0)
 	-- if we wanted to start from 0 (and end at 52), don't add 1
-	return math.ceil(diff_in_weeks) + 1
+	return math.ceil(diff_in_weeks)
 end
 
 M.get_this_week = function(opts)
@@ -126,7 +133,7 @@ M.get_this_week = function(opts)
 	local time = os.time(dt)
 	local today_str = string.lower(vim.fn.strftime("%A", time))
 	local dow = M.get_day_of_week(today_str, opts)
-	dt = M.offset_date(dt, { day = (-dow + 1) })
+	dt = M.offset_date(dt, { day = (1 - dow) })
 	return dt
 end
 

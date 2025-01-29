@@ -149,6 +149,52 @@ M.single_token_fixed_period = function(date_string, opts)
 	}
 end
 
+M.weekstamp = function(date_string, opts)
+	local joiner = function(tokens)
+		if string.match(tokens[2].captured, "week%s+") then
+			local year_str = string.gsub(tokens[1].captured, "%s", "")
+			year_str = string.gsub(year_str, ",", "")
+			local year = tonumber(year_str)
+			local week_num_str = string.gsub(tokens[3].captured, "%s", "")
+			local week_num = tonumber(week_num_str)
+			local dt = datetime.get_week_of_year_dt(week_num, year, opts)
+			return { type = "period", period = { dt, "week" }, str = tokens[3].str }
+		elseif string.match(tokens[1].captured, "week%s+") then
+			local year_str = string.gsub(tokens[3].captured, "%s", "")
+			local year = tonumber(year_str)
+			if year == nil then
+				year = tonumber(datetime.get_today(opts).year)
+			end
+			local week_num_str = string.gsub(tokens[2].captured, "%s", "")
+			week_num_str = string.gsub(week_num_str, ",", "")
+			local week_num = tonumber(week_num_str)
+			local dt = datetime.get_week_of_year_dt(week_num, year, opts)
+			return { type = "period", period = { dt, "week" }, str = tokens[3].str }
+		end
+		return nil
+	end
+
+	local parser = M.select({
+		-- 2024, week 10
+		-- 2024 week 10
+		M.join({
+			M.match("%d+,?%s+"),
+			M.match("week%s+"),
+			M.match("%d+%s*")
+		}, joiner),
+		-- week 10, 2024
+		-- week 10
+		-- week 10 2024
+		M.join({
+			M.match("week%s+"),
+			M.match("%d+,?%s*"),
+			M.match("%d*%s*")
+		}, joiner)
+	})
+	local token = parser(date_string, opts)
+	return token
+end
+
 M.number_offset = function(inverse)
 	local closure = function(date_string, opts)
 		local joiner = function(tokens)
@@ -257,6 +303,7 @@ M.get_relative_fixed_period = function(date_string, opts)
 		M.today,
 		M.tomorrow,
 		M.yesterday,
+		M.weekstamp,
 		M.single_token_fixed_period,
 		M.fixed_period_offset,
 	})

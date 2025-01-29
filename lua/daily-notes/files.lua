@@ -13,7 +13,6 @@ local build_file_path = function(period, opts)
 
 	-- render filename; for now we just use strftime
 	-- later we can perhaps use a fancier method from date module
-	local timestamp = os.time(period[1])
 	local filename = datetime.strftime(opts.writing[p_type].filename, period[1], opts)
 
 	local path = opts.writing.root .. '/' .. filename
@@ -68,6 +67,7 @@ M.open_note = function(period, opts)
 
 	if file_path == nil then
 		print("Failed to build file path, exiting...")
+		return
 	end
 	make_directories(file_path)
 	vim.cmd('e' .. file_path)
