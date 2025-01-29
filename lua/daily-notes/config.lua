@@ -62,6 +62,11 @@ local default = {
 				next = "adjust_this",
 				prev = "adjust_this"
 			},
+			month = {
+				this = "period",
+				next = "adjust_this",
+				prev = "adjust_this"
+			}
 		},
 	},
 	writing = {

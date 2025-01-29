@@ -123,7 +123,9 @@ M.get_week_of_year = function(dt, opts)
 	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
 	local basis_ts = os.time(week_basis)
 	local ts = os.time(dt)
-	local diff_in_weeks = (ts - basis_ts) / (60.0 * 60.0 * 24.0 * 7.0)
+	local dow_1st = M.get_day_of_week(os.date("%A", ts), opts)
+	local ts_adjusted = os.time(M.offset_date(dt, { day = (1 - dow_1st) }))
+	local diff_in_weeks = (ts_adjusted - basis_ts) / (60.0 * 60.0 * 24.0 * 7.0)
 	-- if we wanted to start from 0 (and end at 52), don't add 1
 	return math.ceil(diff_in_weeks)
 end
