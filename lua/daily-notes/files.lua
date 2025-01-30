@@ -1,3 +1,4 @@
+local datetime = require('daily-notes.datetime')
 local M = {}
 
 local build_file_path = function(period, opts)
@@ -10,17 +11,11 @@ local build_file_path = function(period, opts)
 		return nil
 	end
 
-	local path = opts.writing.root
-	if opts.writing[p_type].directory then
-		path = path .. '/' .. opts.writing[p_type].directory
-	end
-
 	-- render filename; for now we just use strftime
 	-- later we can perhaps use a fancier method from date module
-	local timestamp = os.time(period[1])
-	local filename = vim.fn.strftime(opts.writing[p_type].filename, timestamp)
+	local filename = datetime.strftime(opts.writing[p_type].filename, period[1], opts)
 
-	path = path .. '/' .. filename
+	local path = opts.writing.root .. '/' .. filename
 
 	path = path .. '.' .. opts.writing.filetype
 	return path
@@ -34,7 +29,6 @@ local render_template = function(period, opts)
 	if opts.writing[p_type] == nil or opts.writing[p_type].template == nil then
 		return nil
 	end
-	local timestamp = os.time(period[1])
 	local template = opts.writing[p_type].template
 	local lines = {}
 	local rendered = {}
@@ -48,7 +42,7 @@ local render_template = function(period, opts)
 	end
 
 	for i = 1, #lines do
-		table.insert(rendered, vim.fn.strftime(lines[i], timestamp))
+		table.insert(rendered, datetime.strftime(lines[i], period[1], opts))
 	end
 	return rendered
 end
@@ -73,6 +67,7 @@ M.open_note = function(period, opts)
 
 	if file_path == nil then
 		print("Failed to build file path, exiting...")
+		return
 	end
 	make_directories(file_path)
 	vim.cmd('e' .. file_path)

@@ -2,6 +2,7 @@ local M = {}
 
 local config = require("daily-notes.config")
 local fuzzy_time = require("daily-notes.fuzzy-time")
+local datetime = require("daily-notes.datetime")
 local files = require("daily-notes.files")
 
 M.fuzzy_time = function(opts)
@@ -14,7 +15,13 @@ M.fuzzy_time = function(opts)
 	end
 	local timestamp = os.time(date[1]) -- ignore linter error here
 	local time_string = os.date("%Y-%m-%d", timestamp)
-	print(time_string .. " - " .. date[2])
+	local weekday = os.date("%A", timestamp)
+	local dow = datetime.get_day_of_week(weekday, c)
+	local woy = datetime.get_week_of_year(date[1], c)
+	print("Date: " .. time_string)
+	print("Period: " .. date[2])
+	print("Weekday: " .. weekday .. " (" .. dow .. ")")
+	print("Week of year: " .. woy)
 end
 
 M.daily_note = function(opts)

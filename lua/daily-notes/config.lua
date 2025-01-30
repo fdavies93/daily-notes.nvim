@@ -5,8 +5,11 @@ local M = {}
 local default = {
 	parsing = {
 		-- The default string to send to fuzzy_time for parsing
-		-- if nothing
+		-- if nothing else is entered
 		default = "today",
+		-- This is localised so needs changing if you're not using
+		-- English
+		week_starts = "monday",
 		-- Needed to iterate correctly through formats
 		timestamp_order = { "day", "month", "year" },
 		timestamp_formats = {
@@ -55,35 +58,36 @@ local default = {
 				-- next := closest | adjust_this | period
 				-- prev := closest | adjust_this | period
 				-- numerical offsets always use adjust_this
-				this = "closest", -- always pick the closest
+				this = "period",
 				next = "adjust_this",
 				prev = "adjust_this"
 			},
+			month = {
+				this = "period",
+				next = "adjust_this",
+				prev = "adjust_this"
+			}
 		},
-		week_starts = "monday",
 	},
 	writing = {
 		-- recommended to change this
 		root = "~/daily-notes",
 		filetype = "md",
 		write_on_open = true,
+		-- templates can be a string or a lua integer table of strings
 		day = {
-			directory = "daily",
-			filename = "%Y-%m-%d",
+			filename = "daily/%Y-%m-%d",
 			template = "# %A, %B %d %Y\n\n"
 		},
 		week = {
-			directory = "weekly",
-			filename = "%Y-week-%W",
+			filename = "weekly/%Y-week-%W",
 			template = "# Week %W, %Y\n\n"
 		},
 		month = {
-			directory = "monthly",
-			filename = "%Y-%m",
+			filename = "monthly/%Y-%m",
 			template = "# %B %Y\n\n"
 		},
 		year = {
-			directory = "yearly",
 			filename = "%Y",
 			template = "# %Y\n\n"
 		}
