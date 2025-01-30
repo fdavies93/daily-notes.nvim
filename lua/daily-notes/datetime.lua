@@ -21,8 +21,9 @@ M.get_weekday_from_today = function(day_str, mode, opts)
 		forward_offset = offset + 7
 		backward_offset = offset
 	end
-
-	if mode == "forward" or (mode == "closest" and math.abs(forward_offset) < math.abs(backward_offset)) then
+	if forward_offset == 0 then
+		return today_dt
+	elseif mode == "forward" or (mode == "closest" and math.abs(forward_offset) < math.abs(backward_offset)) then
 		offset = forward_offset
 	elseif mode == "back" or (mode == "closest" and math.abs(backward_offset) < math.abs(forward_offset)) then
 		offset = backward_offset
@@ -31,6 +32,35 @@ M.get_weekday_from_today = function(day_str, mode, opts)
 	end
 
 	return M.offset_date(today_dt, { day = offset })
+end
+
+M.get_month_from_today = function(month_str, mode, opts)
+	local month_num = M.get_month_of_year(month_str, opts)
+	if (month_num == nil) then
+		return nil
+	end
+	local today = M.get_today(opts)
+	local forward_distance = month_num - today.month
+	if forward_distance < 0 then
+		forward_distance = forward_distance + 12
+	end
+	local backward_distance = today.month - month_num
+	if backward_distance < 0 then
+		backward_distance = backward_distance + 12
+	end
+	local this_month = M.get_this_month(opts)
+	-- will always clamp to the closest inside this year
+	local offset = month_num - today.month
+	if forward_distance == 0 then
+		return this_month
+	elseif mode == "forward" or (mode == "closest" and forward_distance < backward_distance) then
+		offset = forward_distance
+	elseif mode == "back" or (mode == "closest" and backward_distance < forward_distance) then
+		offset = -backward_distance
+	elseif mode ~= "period" then
+		return nil
+	end
+	return M.offset_date(this_month, { month = offset })
 end
 
 M.offset_date = function(date, offset)
@@ -50,10 +80,14 @@ M.offset_date = function(date, offset)
 	local date_table = os.date("*t", timestamp)
 
 	date_table.month = date_table.month + offset.month
-	if date_table.month > 12 then
-		date_table.month = (date_table.month % 12)
+	local cur_month = date_table.month
+
+	while cur_month > 12 do
+		cur_month = cur_month - 12
 		date_table.year = date_table.year + 1
 	end
+
+	date_table.month = cur_month
 
 	date_table.year = date_table.year + offset.year
 	return date_table

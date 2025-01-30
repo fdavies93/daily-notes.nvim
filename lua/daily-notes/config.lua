@@ -74,6 +74,7 @@ local default = {
 		root = "~/daily-notes",
 		filetype = "md",
 		write_on_open = true,
+		-- templates can be a string or a lua integer table of strings
 		day = {
 			filename = "daily/%Y-%m-%d",
 			template = "# %A, %B %d %Y\n\n"
