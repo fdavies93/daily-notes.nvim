@@ -18,6 +18,10 @@ M.get_timestamp = function(date_string, opts)
 					return nil
 				end
 				local date_table = os.date("*t", timestamp)
+				-- let awkward dates like Feb 21 be interpreted as days, not months
+				if period == "month" and (format == "%B %Y" or format == "%b %Y") and date_table.year <= 31 then
+					return nil
+				end
 				if (period == "month" or period == "year") and date_table.day ~= 1 then
 					-- correct strange off-by-one error from strptime
 					timestamp = timestamp + (24 * 60 * 60)
@@ -193,6 +197,31 @@ M.weekstamp = function(date_string, opts)
 	})
 	local token = parser(date_string, opts)
 	return token
+end
+
+M.number = function(min_digits, max_digits)
+	local closure = function(date_string, opts)
+		local digit_part = ""
+		if max_digits <= 0 then
+			digit_part = "%d+"
+		else
+			for i = 1, max_digits do
+				if i <= min_digits then
+					digit_part = digit_part .. "%d"
+				else
+					digit_part = digit_part .. "%d?"
+				end
+			end
+		end
+		local matched = M.match(digit_part .. "%s*")(date_string)
+		if matched == nil then
+			return nil
+		end
+		local stripped = string.gsub(matched.captured, "%s", "")
+		local num = tonumber(stripped)
+		return { type = "number", number = num, str = matched.str }
+	end
+	return closure
 end
 
 M.number_offset = function(inverse)
@@ -414,6 +443,43 @@ M.weekday_number_offset = function(date_string, opts)
 	return parser(date_string, opts)
 end
 
+M.join_day_of_month = function(tokens, opts)
+	local month_name = nil
+	for _, token in pairs(tokens) do
+		if token.type == "match" then
+			month_name = string.gsub(token.captured, "%s", "")
+			break
+		end
+	end
+	if month_name == nil then
+		return nil
+	end
+	local day_num = 0
+	for _, token in pairs(tokens) do
+		if token.type == "number" then
+			day_num = token.number
+		end
+	end
+	if day_num > 31 or day_num < 1 then
+		return nil
+	end
+	local this_dt = datetime.get_month_from_today(month_name, opts.parsing.resolve_strategy.month.this, opts)
+	if this_dt == nil then
+		return nil
+	end
+	this_dt.day = day_num
+	-- check that this isn't a nonsense date e.g. "Feb 31"
+	local normalised = os.date("*t", os.time(this_dt))
+	if normalised.day ~= this_dt.day then
+		return nil
+	end
+	return {
+		type = "period",
+		period = { this_dt, "day" },
+		str = tokens[#tokens].str
+	}
+end
+
 
 M.join_month_numerical = function(tokens, opts)
 	local month_name = nil
@@ -482,6 +548,14 @@ M.single_token_month = function(date_string, opts)
 	return { type = "period", period = { dt, "month" }, str = "" }
 end
 
+M.day_of_month = function(date_string, opts)
+	local parser = M.select({
+		M.join({ M.number(1, 2), M.match_month }, M.join_day_of_month),
+		M.join({ M.match_month, M.number(1, 2) }, M.join_day_of_month)
+	})
+	return parser(date_string, opts)
+end
+
 M.month_verbal_offset = function(date_string, opts)
 	local parser = M.join({
 		M.word_offset,
@@ -504,6 +578,7 @@ M.get_ambiguous_period = function(date_string, opts)
 		M.weekday_verbal_offset,
 		M.weekday_number_offset,
 		M.single_token_month,
+		M.day_of_month,
 		M.month_verbal_offset,
 		M.month_number_offset,
 	})

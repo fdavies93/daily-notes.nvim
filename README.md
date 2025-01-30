@@ -138,8 +138,10 @@ MONTH
 this MONTH
 next MONTH
 (last | previous | prev) MONTH
+DAY MONTH
+MONTH DAY
 [+/-]NUM MONTH
-MONTH [+/-]NUM -- this is somewhat ambiguous with MONTH YEAR
+MONTH [+/-]NUM
 ```
 
 For the details of date parsing
