@@ -146,7 +146,6 @@ For the details of date parsing
 [see the fuzzy time module](./lua/daily-notes/fuzzy-time.lua).
 
 For all timestamp formats [see default config](./lua/daily-notes/config.lua).
-Timestamps for weeks are currently not implemented.
 
 ## Formatting Date Formats
 
