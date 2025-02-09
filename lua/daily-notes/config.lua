@@ -9,7 +9,7 @@ local default = {
 		default = "today",
 		-- This is localised so needs changing if you're not using
 		-- English
-		week_starts = "monday",
+		week_starts = string.lower(os.date("%A", os.time({ day = 6, month = 1, year = 2025 }))),
 		-- Needed to iterate correctly through formats
 		timestamp_order = { "day", "month", "year" },
 		timestamp_formats = {
