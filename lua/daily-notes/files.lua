@@ -58,8 +58,12 @@ local make_directories = function(path)
 end
 
 M.file_exists = function(path)
-	local exit_code = os.execute("test -f " .. path)
-	return exit_code == 0
+	local res = os.execute("test -f " .. path)
+	if type(res) == "boolean" then
+		return res
+	elseif type(res) == "number" then
+		return res == 0
+	end
 end
 
 M.open_note = function(period, opts)
