@@ -29,6 +29,7 @@ local render_template = function(period, opts)
 	if opts.writing[p_type] == nil or opts.writing[p_type].template == nil then
 		return nil
 	end
+
 	local template = opts.writing[p_type].template
 	local lines = {}
 	local rendered = {}

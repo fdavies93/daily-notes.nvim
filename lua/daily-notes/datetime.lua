@@ -1,8 +1,12 @@
 local M = {}
 
--- returns a date table or nil
--- modes:
--- forward / back / closest / period
+--- @alias relative_date_mode "forward" | "back" | "closest" | "period"
+--- @alias date_offset { year: integer | nil, month: integer | nil, week: integer | nil, day: integer | nil, hour: integer | nil, minute: integer | nil, second: integer | nil }
+--- @alias period [ osdate, "day" | "week" | "month" | "year" ]
+
+--- @param day_str string
+--- @param mode relative_date_mode
+--- @return nil | osdate
 M.get_weekday_from_today = function(day_str, mode, opts)
 	local dow = M.get_day_of_week(day_str, opts)
 	if dow == nil then
@@ -34,6 +38,9 @@ M.get_weekday_from_today = function(day_str, mode, opts)
 	return M.offset_date(today_dt, { day = offset })
 end
 
+--- @param month_str string
+--- @param mode relative_date_mode
+--- @return nil | osdate
 M.get_month_from_today = function(month_str, mode, opts)
 	local month_num = M.get_month_of_year(month_str, opts)
 	if (month_num == nil) then
@@ -63,6 +70,8 @@ M.get_month_from_today = function(month_str, mode, opts)
 	return M.offset_date(this_month, { month = offset })
 end
 
+---@param date osdate
+---@param offset date_offset
 M.offset_date = function(date, offset)
 	local timestamp = os.time(date)
 
@@ -77,7 +86,7 @@ M.offset_date = function(date, offset)
 	timestamp = timestamp + (offset.hour * 60 * 60)
 	timestamp = timestamp + (offset.day * 24 * 60 * 60)
 	timestamp = timestamp + (offset.week * 24 * 60 * 60 * 7)
-	local date_table = os.date("*t", timestamp)
+	local date_table = os.date("*t", timestamp) --[[@as osdate]]
 
 	date_table.month = date_table.month + offset.month
 	local cur_month = date_table.month
@@ -93,6 +102,7 @@ M.offset_date = function(date, offset)
 	return date_table
 end
 
+--- @return string[]
 M.get_days_of_week = function(opts)
 	-- this algorithm doesn't require assumptions about what the basis order
 	-- actually is, so we can generate the day names pretty independently
@@ -100,7 +110,7 @@ M.get_days_of_week = function(opts)
 
 	local cur_time = os.time()
 	for _ = 0, 6 do
-		table.insert(basis, string.lower(os.date("%A", cur_time)))
+		table.insert(basis, string.lower(os.date("%A", cur_time) --[[@as string]]))
 		cur_time = cur_time + (24 * 60 * 60)
 	end
 
@@ -129,6 +139,8 @@ M.get_days_of_week = function(opts)
 	return days
 end
 
+--- @param day_string string
+--- @return integer | nil
 M.get_day_of_week = function(day_string, opts)
 	local ds = string.lower(day_string)
 	local days = M.get_days_of_week(opts)
@@ -141,29 +153,35 @@ M.get_day_of_week = function(day_string, opts)
 	return nil
 end
 
+--- @param week_no integer
+--- @param year_no integer
+--- @return osdate
 M.get_week_of_year_dt = function(week_no, year_no, opts)
 	local jan_1 = { day = 1, month = 1, year = year_no, hour = 0, minute = 0, second = 0 }
 	local jan_1_ts = os.time(jan_1)
-	local jan_1_weekday = os.date("%A", jan_1_ts)
+	local jan_1_weekday = os.date("%A", jan_1_ts) --[[@as string]]
 	local jan_1_weekday_no = M.get_day_of_week(jan_1_weekday, opts)
 	local week_start_dt = M.offset_date(jan_1, { day = (1 - jan_1_weekday_no), week = week_no })
 	return week_start_dt
 end
 
+--- @param dt osdate
+--- @return integer
 M.get_week_of_year = function(dt, opts)
 	local jan_1 = { year = dt.year, month = 1, day = 1, hour = 0, minute = 0, second = 0 }
 	local ts_jan_1 = os.time(jan_1)
-	local dow_jan_1 = M.get_day_of_week(os.date("%A", ts_jan_1), opts)
+	local dow_jan_1 = M.get_day_of_week(os.date("%A", ts_jan_1) --[[@as string]], opts)
 	local week_basis = M.offset_date(jan_1, { day = (1 - dow_jan_1) })
 	local basis_ts = os.time(week_basis)
 	local ts = os.time(dt)
-	local dow_1st = M.get_day_of_week(os.date("%A", ts), opts)
+	local dow_1st = M.get_day_of_week(os.date("%A", ts) --[[@as string]], opts)
 	local ts_adjusted = os.time(M.offset_date(dt, { day = (1 - dow_1st) }))
 	local diff_in_weeks = (ts_adjusted - basis_ts) / (60.0 * 60.0 * 24.0 * 7.0)
 	-- if we wanted to start from 0 (and end at 52), don't add 1
 	return math.ceil(diff_in_weeks)
 end
 
+--- @return osdate
 M.get_this_week = function(opts)
 	local dt = M.get_today(opts)
 	local time = os.time(dt)
@@ -174,39 +192,46 @@ M.get_this_week = function(opts)
 end
 
 
+--- @return osdate
 M.get_this_month = function(opts)
 	local dt = M.get_today(opts)
 	dt.day = 1
 	return dt
 end
 
+--- @return osdate
 M.get_this_year = function(opts)
 	local dt = M.get_this_month(opts)
 	dt.month = 1
 	return dt
 end
 
-M.get_this_period = function(period, opts)
+--- @param period_string "day" | "week" | "month" | "year"
+--- @return period
+M.get_this_period = function(period_string, opts)
 	local map = {
 		day = M.get_today,
 		week = M.get_this_week,
 		month = M.get_this_month,
 		year = M.get_this_year
 	}
-	return { map[period](opts), period }
+	return { map[period_string](opts), period_string }
 end
 
+--- @return string[]
 M.get_months_of_year = function(opts)
 	local months = {}
 	local dt = { day = 1, month = 1, year = 2000 }
 	for _ = 0, 11 do
 		local time = os.time(dt)
-		table.insert(months, string.lower(os.date("%B", time)))
+		table.insert(months, string.lower(os.date("%B", time) --[[@as string]]))
 		dt.month = dt.month + 1
 	end
 	return months
 end
 
+--- @param month_string string
+--- @return integer | nil
 M.get_month_of_year = function(month_string, opts)
 	local months = M.get_months_of_year(opts)
 	for i, month in ipairs(months) do
@@ -218,30 +243,33 @@ M.get_month_of_year = function(month_string, opts)
 	return nil
 end
 
-
-
+--- @return string
 M.get_today_name = function(opts)
 	local dt = M.get_today(opts)
 	local time = os.time(dt)
 	return string.lower(vim.fn.strftime("%A", time))
 end
 
+--- @return osdate
 M.get_today = function(opts)
 	local date_table = os.date("*t")
 	date_table.sec = 0
 	date_table.min = 0
 	date_table.hour = 0
-	return date_table
+	return date_table --[[@as osdate]]
 end
 
+--- @param format string
+--- @param dt osdate
+--- @return string
 M.strftime = function(format, dt, opts)
 	local week_of_year = M.get_week_of_year(dt, opts)
 	local timestamp = os.time(dt)
-	local day_str = os.date("%A", timestamp)
+	local day_str = os.date("%A", timestamp) --[[@as string]]
 	local day_of_week = M.get_day_of_week(day_str, opts)
 	local working_string = string.gsub(format, "%%W", string.format("%02d", week_of_year))
 	working_string = string.gsub(working_string, "%%w", string.format("%d", day_of_week))
-	working_string = os.date(working_string, timestamp)
+	working_string = os.date(working_string, timestamp) --[[@as string]]
 	return working_string
 end
 
