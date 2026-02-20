@@ -2,7 +2,8 @@ local datetime = require("daily-notes.datetime")
 
 local M = {}
 
---- @alias period_no_timestamp_token { str: string, period: "day" | "week" | "month" | "year" , type: "period_no_timestamp" }
+--- @alias period_str "day" | "week" | "month" | "year"
+--- @alias period_no_timestamp_token { str: string, period: period_str , type: "period_no_timestamp" }
 --- @alias period_token { str: string, period: period, type: "period" }
 --- @alias number_token { str: string, number: integer, type: "number" }
 --- @alias offset_token { str: string, offset: integer, type: "offset" }
@@ -349,6 +350,140 @@ M.fixed_period_offset = function(date_string, opts)
 	return token
 end
 
+--- @param input_str string
+--- @param pattern string
+--- @return string[]
+local split = function(input_str, pattern)
+	local str_table = {}
+	for part in string.gmatch(input_str, pattern) do
+		table.insert(str_table, part)
+	end
+	return str_table
+end
+
+--- @return { day: string, week: string, month: string, year: string }
+local get_writable_timestamps = function(opts)
+	local writing_opts = opts["writing"]
+	local timestamps = {}
+	local name = ""
+	local file_path = ""
+	local path_split = {}
+	for _, period_key in ipairs({ "day", "week", "month", "year" }) do
+		file_path = writing_opts[period_key]["filename"]
+		path_split = split(file_path, "[^/]+")
+		name = path_split[#path_split]
+		timestamps[period_key] = name
+	end
+	return timestamps
+end
+
+--- @param tokens token[]
+--- @param opts { [string]: any }
+--- @return period_token | nil
+M.join_file_relative_period = function(tokens, opts)
+	-- get the current filename (no extensions)
+	local file_path = vim.api.nvim_buf_get_name(0)
+	local path_split = split(file_path, "[^/]+")
+	-- use for interpreting writable filenames
+	local file_name = path_split[#path_split]
+	-- use for generic timestamps
+	local file_stem = split(file_name, "[^.]+")[1]
+	-- parse it - try using write formats first, then timestamp parser
+	local writable_timestamps = get_writable_timestamps(opts)
+
+	local timestamp = 0
+	--- @type period | nil
+	local file_period = nil
+	local format = ""
+	for _, period in ipairs({ "day", "week", "month", "year" }) do
+		format = writable_timestamps[period]
+		-- TODO: implement own version of strptime to account for eccentricities
+		-- like the 1-day offset and week numbers (sad)
+		timestamp = vim.fn.strptime(format, file_stem)
+		if timestamp ~= 0 then
+			local date = os.date("*t", timestamp) --[[ @as osdate ]]
+			print(date.year .. "-" .. date.month .. "-" .. date.day)
+			file_period = { date, period }
+			break
+		end
+	end
+	if timestamp == 0 then
+		local period_token = M.get_timestamp(file_stem, opts)
+		if period_token == nil then
+			return nil
+		end
+		file_period = period_token.period
+	end
+	if file_period == nil then
+		return nil
+	end
+
+	-- Set default behaviour for cases where offset and/or period type are
+	-- absent.
+	local verb = tokens[1].captured
+	--- @type period_str
+	local offset_period = file_period[2]
+	print(offset_period)
+	--- @type integer
+	local offset_amount = 1
+
+	if string.gsub(verb, "\\s+", "") == "back" then
+		offset_amount = -1
+	end
+	-- get offset and period token from input str if possible
+	for _, token in ipairs(tokens) do
+		if token.type == "period_no_timestamp" then
+			--- @cast token period_no_timestamp_token
+			offset_period = token.period
+			print(offset_period)
+		elseif token.type == "offset" then
+			--- @cast token offset_token
+			offset_amount = token.offset
+		end
+	end
+	local offset_compound = {}
+	offset_compound[offset_period] = offset_amount
+	-- offset it by the appropriate amount
+	file_period = {
+		datetime.offset_date(file_period[1], offset_compound),
+		file_period[2],
+	}
+	-- return period token
+	local period_token = { str = "", period = file_period, type = "period" }
+	return period_token
+end
+
+M.file_relative_period = function(date_string, opts)
+	local parser = M.select({
+		M.join({
+			M.match("forward%s*"),
+			M.number_offset(false),
+			M.period,
+		}, M.join_file_relative_period),
+		M.join({
+			M.match("forward%s*"),
+			M.period,
+		}, M.join_file_relative_period),
+		M.join({
+			M.match("forward%s*"),
+		}, M.join_file_relative_period),
+		M.join({
+			M.match("back%s*"),
+			M.number_offset(true),
+			M.period,
+		}, M.join_file_relative_period),
+		M.join({
+			M.match("back%s*"),
+			M.period,
+		}, M.join_file_relative_period),
+		M.join({
+			M.match("back%s*"),
+		}, M.join_file_relative_period),
+	})
+	local token = parser(date_string, opts)
+	return token
+end
+
 -- relative_fixed_period := today | tomorrow | yesterday
 M.get_relative_fixed_period = function(date_string, opts)
 	local parser = M.select({
@@ -358,6 +493,7 @@ M.get_relative_fixed_period = function(date_string, opts)
 		M.weekstamp,
 		M.single_token_fixed_period,
 		M.fixed_period_offset,
+		M.file_relative_period,
 	})
 	return parser(date_string, opts)
 end
