@@ -402,7 +402,11 @@ M.join_file_relative_period = function(tokens, opts)
 		timestamp = vim.fn.strptime(format, file_stem)
 		if timestamp ~= 0 then
 			local date = os.date("*t", timestamp) --[[ @as osdate ]]
-			print(date.year .. "-" .. date.month .. "-" .. date.day)
+			if period == "month" or period == "year" then
+				-- deal with strptime offset issues
+				date = datetime.offset_date(date, { day = 1 })
+			end
+			print(date.year .. "-" .. date.month .. "-" .. date.day .. "Z" .. date.hour .. ":" .. date.min)
 			file_period = { date, period }
 			break
 		end
@@ -423,7 +427,7 @@ M.join_file_relative_period = function(tokens, opts)
 	local verb = tokens[1].captured
 	--- @type period_str
 	local offset_period = file_period[2]
-	print(offset_period)
+	-- print(offset_period)
 	--- @type integer
 	local offset_amount = 1
 
