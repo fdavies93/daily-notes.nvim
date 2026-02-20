@@ -2,6 +2,15 @@ local datetime = require("daily-notes.datetime")
 
 local M = {}
 
+--- @alias period_no_timestamp_token { str: string, period: "day" | "week" | "month" | "year" , type: "period_no_timestamp" }
+--- @alias period_token { str: string, period: period, type: "period" }
+--- @alias number_token { str: string, number: integer, type: "number" }
+--- @alias offset_token { str: string, offset: integer, type: "offset" }
+---
+--- @alias token period_no_timestamp_token | period_token | number_token | offset_token
+
+--- @param date_string string
+--- @return period_token | nil
 M.get_timestamp = function(date_string, opts)
 	local order = opts.parsing.timestamp_order
 	local timestamp_formats = opts.parsing.timestamp_formats
@@ -34,7 +43,8 @@ M.get_timestamp = function(date_string, opts)
 	return nil
 end
 
-
+--- @param date_string string
+--- @return period_token | nil
 M.today = function(date_string, opts)
 	if date_string == "today" then
 		return { str = "", period = { datetime.get_today(), "day" }, type = "period" }
@@ -42,23 +52,21 @@ M.today = function(date_string, opts)
 	return nil
 end
 
+--- @param date_string string
+--- @return period_token | nil
 M.tomorrow = function(date_string, opts)
 	if date_string == "tomorrow" then
-		local period = { datetime.offset_date(
-			datetime.get_today(),
-			{ day = 1 }
-		), "day" }
+		local period = { datetime.offset_date(datetime.get_today(), { day = 1 }), "day" }
 		return { str = "", period = period, type = "period" }
 	end
 	return nil
 end
 
+--- @param date_string string
+--- @return period_token | nil
 M.yesterday = function(date_string, opts)
 	if date_string == "yesterday" then
-		local period = { datetime.offset_date(
-			datetime.get_today(),
-			{ day = -1 }
-		), "day" }
+		local period = { datetime.offset_date(datetime.get_today(), { day = -1 }), "day" }
 		return { str = "", period = period, type = "period" }
 	end
 	return nil
@@ -111,19 +119,20 @@ M.match = function(pattern)
 		return {
 			str = string.sub(input, e + 1),
 			captured = string.sub(input, s, e),
-			type = "match"
+			type = "match",
 		}
 	end
 	return closure
 end
 
-
+--- @param date_string string
+--- @return period_no_timestamp_token | nil
 M.period = function(date_string, opts)
 	local parser = M.select({
 		M.match("days?%s*"),
 		M.match("weeks?%s*"),
 		M.match("months?%s*"),
-		M.match("years?%s*")
+		M.match("years?%s*"),
 	})
 	local token = parser(date_string, opts)
 	if token == nil then
@@ -136,6 +145,8 @@ M.period = function(date_string, opts)
 	return { type = "period_no_timestamp", period = period_str, str = token.str }
 end
 
+--- @param date_string string
+--- @return period_token | nil
 M.single_token_fixed_period = function(date_string, opts)
 	local period_no_timestamp = M.period(date_string, opts)
 	if period_no_timestamp == nil then
@@ -149,10 +160,13 @@ M.single_token_fixed_period = function(date_string, opts)
 	return {
 		str = "",
 		type = "period",
-		period = datetime.get_this_period(period_no_timestamp.period, opts)
+		period = datetime.get_this_period(period_no_timestamp.period, opts),
 	}
 end
 
+--- @param date_string string
+--- @param opts any
+--- @return period_token | nil
 M.weekstamp = function(date_string, opts)
 	local joiner = function(tokens)
 		if string.match(tokens[2].captured, "week%s+") then
@@ -184,7 +198,7 @@ M.weekstamp = function(date_string, opts)
 		M.join({
 			M.match("%d+,?%s+"),
 			M.match("week%s+"),
-			M.match("%d+%s*")
+			M.match("%d+%s*"),
 		}, joiner),
 		-- week 10, 2024
 		-- week 10
@@ -192,13 +206,16 @@ M.weekstamp = function(date_string, opts)
 		M.join({
 			M.match("week%s+"),
 			M.match("%d+,?%s*"),
-			M.match("%d*%s*")
-		}, joiner)
+			M.match("%d*%s*"),
+		}, joiner),
 	})
 	local token = parser(date_string, opts)
 	return token
 end
 
+--- @param min_digits integer
+--- @param max_digits integer
+--- @return fun(date_string: string, opts: any): number_token
 M.number = function(min_digits, max_digits)
 	local closure = function(date_string, opts)
 		local digit_part = ""
@@ -224,6 +241,8 @@ M.number = function(min_digits, max_digits)
 	return closure
 end
 
+--- @param inverse boolean
+--- @return fun(date_string: string, opts: any): offset_token | nil
 M.number_offset = function(inverse)
 	local closure = function(date_string, opts)
 		local joiner = function(tokens)
@@ -237,7 +256,7 @@ M.number_offset = function(inverse)
 		end
 		local parser = M.join({
 			M.match("[+-]?%s*"),
-			M.match("%d+%s*")
+			M.match("%d+%s*"),
 		}, joiner)
 		local token = parser(date_string, opts)
 		return token
@@ -245,13 +264,16 @@ M.number_offset = function(inverse)
 	return closure
 end
 
+--- @param date_string string
+--- @param opts any
+--- @return offset_token | nil
 M.word_offset = function(date_string, opts)
 	local parser = M.select({
 		M.match("next%s*"),
 		M.match("last%s*"),
 		M.match("previous%s*"),
 		M.match("prev%s*"),
-		M.match("this%s*")
+		M.match("this%s*"),
 	})
 	local token = parser(date_string, opts)
 	if token == nil then
@@ -268,6 +290,7 @@ M.word_offset = function(date_string, opts)
 	return { type = "offset", offset = offset_val, str = token.str }
 end
 
+--- @return period_token | nil
 M.join_fixed_period = function(tokens, opts)
 	-- otherwise "2 days ago" will be rejected in favor of "2 days"
 	if string.len(tokens[#tokens].str) > 0 then
@@ -293,7 +316,7 @@ M.join_fixed_period = function(tokens, opts)
 	return {
 		type = "period",
 		period = { dt, period_str },
-		str = last_str
+		str = last_str,
 	}
 end
 
@@ -301,26 +324,26 @@ M.fixed_period_offset = function(date_string, opts)
 	local parser = M.select({
 		M.join({
 			M.number_offset(false),
-			M.period
+			M.period,
 		}, M.join_fixed_period),
 		M.join({
 			M.period,
-			M.number_offset(false)
+			M.number_offset(false),
 		}, M.join_fixed_period),
 		M.join({
 			M.match("in%s*"),
 			M.number_offset(false),
-			M.period
+			M.period,
 		}, M.join_fixed_period),
 		M.join({
 			M.number_offset(true),
 			M.period,
-			M.match("ago%s*")
+			M.match("ago%s*"),
 		}, M.join_fixed_period),
 		M.join({
 			M.word_offset,
-			M.period
-		}, M.join_fixed_period)
+			M.period,
+		}, M.join_fixed_period),
 	})
 	local token = parser(date_string, opts)
 	return token
@@ -421,15 +444,14 @@ M.join_weekday_numerical = function(tokens, opts)
 	return {
 		type = "period",
 		period = { datetime.offset_date(this_dt, { day = offset }), "day" },
-		str = tokens[2]
-		    .str
+		str = tokens[2].str,
 	}
 end
 
 M.weekday_verbal_offset = function(date_string, opts)
 	local parser = M.join({
 		M.word_offset,
-		M.match_weekday
+		M.match_weekday,
 	}, M.join_weekday_verbal)
 
 	return parser(date_string, opts)
@@ -438,7 +460,7 @@ end
 M.weekday_number_offset = function(date_string, opts)
 	local parser = M.select({
 		M.join({ M.number_offset(false), M.match_weekday }, M.join_weekday_numerical),
-		M.join({ M.match_weekday, M.number_offset(false) }, M.join_weekday_numerical)
+		M.join({ M.match_weekday, M.number_offset(false) }, M.join_weekday_numerical),
 	})
 	return parser(date_string, opts)
 end
@@ -476,10 +498,9 @@ M.join_day_of_month = function(tokens, opts)
 	return {
 		type = "period",
 		period = { this_dt, "day" },
-		str = tokens[#tokens].str
+		str = tokens[#tokens].str,
 	}
 end
-
 
 M.join_month_numerical = function(tokens, opts)
 	local month_name = nil
@@ -503,8 +524,7 @@ M.join_month_numerical = function(tokens, opts)
 	return {
 		type = "period",
 		period = { datetime.offset_date(this_dt, { month = offset }), "month" },
-		str = tokens[2]
-		    .str
+		str = tokens[2].str,
 	}
 end
 
@@ -551,7 +571,7 @@ end
 M.day_of_month = function(date_string, opts)
 	local parser = M.select({
 		M.join({ M.number(1, 2), M.match_month }, M.join_day_of_month),
-		M.join({ M.match_month, M.number(1, 2) }, M.join_day_of_month)
+		M.join({ M.match_month, M.number(1, 2) }, M.join_day_of_month),
 	})
 	return parser(date_string, opts)
 end
@@ -559,7 +579,7 @@ end
 M.month_verbal_offset = function(date_string, opts)
 	local parser = M.join({
 		M.word_offset,
-		M.match_month
+		M.match_month,
 	}, M.join_month_verbal)
 	return parser(date_string, opts)
 end
@@ -567,7 +587,7 @@ end
 M.month_number_offset = function(date_string, opts)
 	local parser = M.select({
 		M.join({ M.number_offset(false), M.match_month }, M.join_month_numerical),
-		M.join({ M.match_month, M.number_offset(false) }, M.join_month_numerical)
+		M.join({ M.match_month, M.number_offset(false) }, M.join_month_numerical),
 	})
 	return parser(date_string, opts)
 end
@@ -588,7 +608,7 @@ end
 M.get_relative_period = function(date_string, opts)
 	local parser = M.select({
 		M.get_relative_fixed_period,
-		M.get_ambiguous_period
+		M.get_ambiguous_period,
 	})
 	return parser(date_string, opts)
 end
@@ -600,7 +620,7 @@ M.get_period = function(date_string, opts)
 	local lower = string.lower(date_string)
 	local parser = M.select({
 		M.get_timestamp,
-		M.get_relative_period
+		M.get_relative_period,
 	})
 
 	local token = parser(lower, opts)
