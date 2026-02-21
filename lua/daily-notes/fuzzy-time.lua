@@ -21,7 +21,7 @@ M.get_timestamp = function(date_string, opts)
 			local format = timestamp_formats[period][format_i]
 			-- Might be worth replacing strptime with a less temperamental
 			-- alternative later.
-			local timestamp = vim.fn.strptime(format, date_string)
+			local timestamp = datetime.strptime(format, date_string, opts)
 			if timestamp ~= 0 then
 				-- force full, zero-padded representation of year
 				if period == "year" and string.len(date_string) ~= 4 then
@@ -383,6 +383,12 @@ end
 M.join_file_relative_period = function(tokens, opts)
 	-- get the current filename (no extensions)
 	local file_path = vim.api.nvim_buf_get_name(0)
+
+	-- Impossible to return a valid file-relative date from an empty buffer
+	if file_path == "" then
+		return nil
+	end
+
 	local path_split = split(file_path, "[^/]+")
 	-- use for interpreting writable filenames
 	local file_name = path_split[#path_split]
@@ -398,8 +404,8 @@ M.join_file_relative_period = function(tokens, opts)
 	for _, period in ipairs({ "day", "week", "month", "year" }) do
 		format = writable_timestamps[period]
 		-- TODO: implement own version of strptime to account for eccentricities
-		-- like the 1-day offset and week numbers (sad)
-		timestamp = vim.fn.strptime(format, file_stem)
+		-- like the 1-day offset and week numbers not working (sad)
+		timestamp = datetime.strptime(format, file_stem, opts)
 		if timestamp ~= 0 then
 			local date = os.date("*t", timestamp) --[[ @as osdate ]]
 			if period == "month" or period == "year" then
