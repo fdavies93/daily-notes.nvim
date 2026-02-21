@@ -412,7 +412,7 @@ M.join_file_relative_period = function(tokens, opts)
 				-- deal with strptime offset issues
 				date = datetime.offset_date(date, { day = 1 })
 			end
-			print(date.year .. "-" .. date.month .. "-" .. date.day .. "Z" .. date.hour .. ":" .. date.min)
+			-- print(date.year .. "-" .. date.month .. "-" .. date.day .. "Z" .. date.hour .. ":" .. date.min)
 			file_period = { date, period }
 			break
 		end
@@ -433,7 +433,6 @@ M.join_file_relative_period = function(tokens, opts)
 	local verb = tokens[1].captured
 	--- @type period_str
 	local offset_period = file_period[2]
-	-- print(offset_period)
 	--- @type integer
 	local offset_amount = 1
 
@@ -445,7 +444,6 @@ M.join_file_relative_period = function(tokens, opts)
 		if token.type == "period_no_timestamp" then
 			--- @cast token period_no_timestamp_token
 			offset_period = token.period
-			print(offset_period)
 		elseif token.type == "offset" then
 			--- @cast token offset_token
 			offset_amount = token.offset
