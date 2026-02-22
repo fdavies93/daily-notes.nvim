@@ -6,7 +6,6 @@
 # daily-notes.nvim
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-
 [![Versioning: SoloVer](https://img.shields.io/badge/versioning-SoloVer-blue)](https://beza1e1.tuxen.de/SoloVer)
 
 An nvim plugin to enable creating periodic notes for journals and planning.
