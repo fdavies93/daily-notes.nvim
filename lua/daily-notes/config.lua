@@ -39,11 +39,11 @@ local default = {
 				"%B %Y",
 				"%b %Y",
 				"%B, %Y",
-				"%b, %Y"
+				"%b, %Y",
 			},
 			year = {
-				"%Y"
-			}
+				"%Y",
+			},
 		},
 		resolve_strategy = {
 			weekday = {
@@ -64,13 +64,13 @@ local default = {
 				-- numerical offsets always use adjust_this
 				this = "period",
 				next = "adjust_this",
-				prev = "adjust_this"
+				prev = "adjust_this",
 			},
 			month = {
 				this = "period",
 				next = "adjust_this",
-				prev = "adjust_this"
-			}
+				prev = "adjust_this",
+			},
 		},
 	},
 	writing = {
@@ -81,21 +81,21 @@ local default = {
 		-- templates can be a string or a lua integer table of strings
 		day = {
 			filename = "daily/%Y-%m-%d",
-			template = "# %A, %B %d %Y\n\n"
+			template = "# %A, %B %d %Y\n\n",
 		},
 		week = {
 			filename = "weekly/%Y-week-%W",
-			template = "# Week %W, %Y\n\n"
+			template = "# Week %W, %Y\n\n",
 		},
 		month = {
 			filename = "monthly/%Y-%m",
-			template = "# %B %Y\n\n"
+			template = "# %B %Y\n\n",
 		},
 		year = {
 			filename = "%Y",
-			template = "# %Y\n\n"
-		}
-	}
+			template = "# %Y\n\n",
+		},
+	},
 }
 
 M.setup = function(opts)
@@ -108,6 +108,22 @@ end
 
 M.get = function()
 	return default
+end
+
+--- @return { day: string, week: string, month: string, year: string }
+M.get_writable_timestamps = function(opts)
+	local writing_opts = opts["writing"]
+	local timestamps = {}
+	local name = ""
+	local file_path = ""
+	local path_split = {}
+	for _, period_key in ipairs({ "day", "week", "month", "year" }) do
+		file_path = writing_opts[period_key]["filename"]
+		path_split = utils.split(file_path, "[^/]+")
+		name = path_split[#path_split]
+		timestamps[period_key] = name
+	end
+	return timestamps
 end
 
 return M

@@ -121,6 +121,22 @@ next PERIOD
 in [+/-]NUM PERIOD
 [+/-]NUM PERIOD ago
 
+-- Unambiguous semantic dates (file relative)
+
+-- To locate the starting date, will try using the timestamp formats used to
+-- write files of each period first, then fall back to using all timestamp
+-- formats, then finally fail if neither approach succeeds.
+forward [+/-]NUM PERIOD
+back [+/-]NUM PERIOD
+-- If no number is specified it will default to +1 or -1
+forward PERIOD
+back PERIOD
+-- If no period is specified it will work from the period of the current date's
+-- timestamp e.g. if the file is '2025 Week 07' then 'forward' will be
+-- interpreted as 'forward 1 week'.
+forward
+back
+
 -- Ambiguous semantic dates
 
 -- WEEKDAY is generated from the locale names for the weekdays, e.g. "tuesday"

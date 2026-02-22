@@ -43,7 +43,7 @@ end
 --- @return nil | osdate
 M.get_month_from_today = function(month_str, mode, opts)
 	local month_num = M.get_month_of_year(month_str, opts)
-	if (month_num == nil) then
+	if month_num == nil then
 		return nil
 	end
 	local today = M.get_today(opts)
@@ -191,7 +191,6 @@ M.get_this_week = function(opts)
 	return dt
 end
 
-
 --- @return osdate
 M.get_this_month = function(opts)
 	local dt = M.get_today(opts)
@@ -213,7 +212,7 @@ M.get_this_period = function(period_string, opts)
 		day = M.get_today,
 		week = M.get_this_week,
 		month = M.get_this_month,
-		year = M.get_this_year
+		year = M.get_this_year,
 	}
 	return { map[period_string](opts), period_string }
 end
@@ -271,6 +270,32 @@ M.strftime = function(format, dt, opts)
 	working_string = string.gsub(working_string, "%%w", string.format("%d", day_of_week))
 	working_string = os.date(working_string, timestamp) --[[@as string]]
 	return working_string
+end
+
+--- @param format string
+--- @param timestring string
+--- @param opts { [string]: any }
+--- @return integer
+M.strptime = function(format, timestring, opts)
+	-- week numbers are weird; both day of week and week of year must be
+	-- present to get a correct timestamp; therefore we need to correct
+	-- for the entropy in names like '2026 Week 1'
+	-- this is inherent to the C header time.h which nvim and all other Lua
+	-- bindings use
+	local has_week_no = string.find(format, "%%W") ~= nil
+	local has_dow = string.find(format, "%%w") ~= nil
+	local format_mod = format
+	local timestring_mod = timestring
+	if has_week_no and not has_dow then
+		format_mod = format_mod .. " %w"
+		timestring_mod = timestring_mod .. " 1"
+		-- need to offset to account for if start of week is not Sunday
+	elseif has_dow and not has_week_no then
+		format_mod = format_mod .. " %W"
+		timestring_mod = timestring_mod .. " 1"
+		-- need to offset this too but in different way
+	end
+	return vim.fn.strptime(format_mod, timestring_mod)
 end
 
 return M
