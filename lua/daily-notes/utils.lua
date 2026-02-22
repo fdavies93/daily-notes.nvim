@@ -10,4 +10,15 @@ M.merge_table_to_target = function(source, target)
 	end
 end
 
+--- @param input_str string
+--- @param pattern string
+--- @return string[]
+M.split = function(input_str, pattern)
+	local str_table = {}
+	for part in string.gmatch(input_str, pattern) do
+		table.insert(str_table, part)
+	end
+	return str_table
+end
+
 return M

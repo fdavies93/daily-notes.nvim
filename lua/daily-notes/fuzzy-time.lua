@@ -1,4 +1,6 @@
 local datetime = require("daily-notes.datetime")
+local utils = require("daily-notes.utils")
+local config = require("daily-notes.config")
 
 local M = {}
 
@@ -350,33 +352,6 @@ M.fixed_period_offset = function(date_string, opts)
 	return token
 end
 
---- @param input_str string
---- @param pattern string
---- @return string[]
-local split = function(input_str, pattern)
-	local str_table = {}
-	for part in string.gmatch(input_str, pattern) do
-		table.insert(str_table, part)
-	end
-	return str_table
-end
-
---- @return { day: string, week: string, month: string, year: string }
-local get_writable_timestamps = function(opts)
-	local writing_opts = opts["writing"]
-	local timestamps = {}
-	local name = ""
-	local file_path = ""
-	local path_split = {}
-	for _, period_key in ipairs({ "day", "week", "month", "year" }) do
-		file_path = writing_opts[period_key]["filename"]
-		path_split = split(file_path, "[^/]+")
-		name = path_split[#path_split]
-		timestamps[period_key] = name
-	end
-	return timestamps
-end
-
 --- @param tokens token[]
 --- @param opts { [string]: any }
 --- @return period_token | nil
@@ -389,13 +364,13 @@ M.join_file_relative_period = function(tokens, opts)
 		return nil
 	end
 
-	local path_split = split(file_path, "[^/]+")
+	local path_split = utils.split(file_path, "[^/]+")
 	-- use for interpreting writable filenames
 	local file_name = path_split[#path_split]
 	-- use for generic timestamps
-	local file_stem = split(file_name, "[^.]+")[1]
+	local file_stem = utils.split(file_name, "[^.]+")[1]
 	-- parse it - try using write formats first, then timestamp parser
-	local writable_timestamps = get_writable_timestamps(opts)
+	local writable_timestamps = config.get_writable_timestamps(opts)
 
 	local timestamp = 0
 	--- @type period | nil
@@ -403,8 +378,6 @@ M.join_file_relative_period = function(tokens, opts)
 	local format = ""
 	for _, period in ipairs({ "day", "week", "month", "year" }) do
 		format = writable_timestamps[period]
-		-- TODO: implement own version of strptime to account for eccentricities
-		-- like the 1-day offset and week numbers not working (sad)
 		timestamp = datetime.strptime(format, file_stem, opts)
 		if timestamp ~= 0 then
 			local date = os.date("*t", timestamp) --[[ @as osdate ]]
@@ -412,7 +385,6 @@ M.join_file_relative_period = function(tokens, opts)
 				-- deal with strptime offset issues
 				date = datetime.offset_date(date, { day = 1 })
 			end
-			-- print(date.year .. "-" .. date.month .. "-" .. date.day .. "Z" .. date.hour .. ":" .. date.min)
 			file_period = { date, period }
 			break
 		end
